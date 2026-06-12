@@ -1,14 +1,10 @@
+// apps/app1-farmer/src/screens/SplashScreen.tsx
 /* eslint-disable react-native/no-inline-styles */
 import React, { useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  TouchableOpacity,
-  StatusBar,
+  View, Text, StyleSheet, Animated,
+  TouchableOpacity, StatusBar,
 } from 'react-native';
-
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParams } from '../navigation/RootNavigator';
@@ -27,23 +23,23 @@ const LANGS = [
 
 export default function SplashScreen() {
   const navigation = useNavigation<Nav>();
-  const dispatch = useAppDispatch();
-  const lang = useAppSelector(selectLanguage);
+  const dispatch   = useAppDispatch();
+  const lang       = useAppSelector(selectLanguage);
 
-  const logoScale = useRef(new Animated.Value(0.7)).current;
+  const logoScale  = useRef(new Animated.Value(0.7)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
-  const slideUp = useRef(new Animated.Value(40)).current;
+  const slideUp    = useRef(new Animated.Value(40)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.sequence([
       Animated.parallel([
-        Animated.spring(logoScale, { toValue: 1, useNativeDriver: true, tension: 55, friction: 7 }),
+        Animated.spring(logoScale,   { toValue: 1, useNativeDriver: true, tension: 55, friction: 7 }),
         Animated.timing(logoOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
       ]),
       Animated.parallel([
         Animated.timing(cardOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
-        Animated.spring(slideUp, { toValue: 0, useNativeDriver: true, tension: 60, friction: 8 }),
+        Animated.spring(slideUp,     { toValue: 0, useNativeDriver: true, tension: 60, friction: 8 }),
       ]),
     ]).start();
   }, [cardOpacity, logoOpacity, logoScale, slideUp]);
@@ -64,9 +60,7 @@ export default function SplashScreen() {
           </View>
         </Animated.View>
 
-        {/* Farm illustration */}
         <View style={styles.illustration}>
-          {/* <Text style={styles.farmRow}>🌽   🫘   🥔   🍌   🥬</Text> */}
           <Text style={styles.farmCaption}>Farm smarter · Earn more · Track everything</Text>
         </View>
       </View>
@@ -95,6 +89,7 @@ export default function SplashScreen() {
         </View>
 
         <View style={styles.actions}>
+          {/* Register → choose role first */}
           <TouchableOpacity
             style={styles.primaryBtn}
             onPress={() => navigation.navigate('RoleSelect')}
@@ -103,9 +98,10 @@ export default function SplashScreen() {
             <Text style={styles.primaryBtnText}>🌱 Get Started — Register</Text>
           </TouchableOpacity>
 
+          {/* Login → skip role selection, go straight to phone entry */}
           <TouchableOpacity
             style={styles.secondaryBtn}
-            onPress={() => navigation.navigate('PhoneEntry')}
+            onPress={() => navigation.navigate('PhoneEntry', { mode: 'login' })}
             activeOpacity={0.75}
           >
             <Text style={styles.secondaryBtnText}>I already have an account →</Text>
@@ -119,138 +115,62 @@ export default function SplashScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.green,
-  },
-  hero: {
-    flex: 1,
-    alignItems: 'center',
+  root: { flex: 1, backgroundColor: Colors.green },
+  hero: { flex: 1, alignItems: 'center',
     justifyContent: 'center',
-    padding: Space.xl,
-    gap: Space.xl,
-  },
+    padding: Space.xl, gap: Space.xl },
+
   logoMark: {
-    width: 80,
-    height: 80,
-    borderRadius: 22,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+    width: 80, height: 80, borderRadius: 22,
+    backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center',
+    elevation: 8, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10,
   },
-  logoEmoji: {
-    fontSize: 42,
-  },
-  appName: {
-    fontSize: 36,
-    fontWeight: Font.weight.bold,
-    color: Colors.textInverse,
-    letterSpacing: 0.5,
-  },
-  tagline: {
-    fontSize: Font.size.body,
+
+
+  logoEmoji:  { fontSize: 42 },
+  appName:    { fontSize: 36, fontWeight: Font.weight.bold,
+    color: Colors.textInverse, letterSpacing: 0.5
+    },
+
+  tagline:    { fontSize: Font.size.body,
     color: 'rgba(255,255,255,0.80)',
-    textAlign: 'center',
+    textAlign: 'center'
   },
   illustration: {
-    alignItems: 'center',
-    gap: Space.sm,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: Layout.radius.xl,
-    paddingHorizontal: Space.xl,
-    paddingVertical: Space.md,
+    alignItems: 'center', gap: Space.sm,
+    backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: Layout.radius.xl,
+    paddingHorizontal: Space.xl, paddingVertical: Space.md,
   },
-  farmRow: {
-    fontSize: 32,
-    letterSpacing: 4,
-  },
-  farmCaption: {
-    fontSize: Font.size.label,
-    color: 'rgba(255,255,255,0.75)',
-    textAlign: 'center',
-  },
+  farmCaption: { fontSize: Font.size.label, color: 'rgba(255,255,255,0.75)', textAlign: 'center' },
   card: {
     backgroundColor: Colors.surface,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 28, borderTopRightRadius: 28,
     paddingHorizontal: Layout.safePadding,
-    paddingTop: Space.lg,
-    paddingBottom: Space.xl,
+    paddingTop: Space.lg, paddingBottom: Space.xl,
     gap: Space.md,
     elevation: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.12, shadowRadius: 16,
   },
-  langWrap: {
-    gap: Space.sm,
+  langWrap:  { gap: Space.sm },
+  langLabel: { fontSize: Font.size.caption, color: Colors.textMuted, textAlign: 'center' },
+  langRow:   { flexDirection: 'row', justifyContent: 'center', gap: Space.sm },
+  langPill:  {
+    paddingHorizontal: 18, paddingVertical: 9, borderRadius: Layout.radius.pill,
+    borderWidth: 1.5, borderColor: Colors.border, minWidth: 52, alignItems: 'center',
   },
-  langLabel: {
-    fontSize: Font.size.caption,
-    color: Colors.textMuted,
-    textAlign: 'center',
-  },
-  langRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Space.sm,
-  },
-  langPill: {
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: Layout.radius.pill,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    minWidth: 52,
-    alignItems: 'center',
-  },
-  langPillActive: {
-    backgroundColor: Colors.green,
-    borderColor: Colors.green,
-  },
-  langText: {
-    fontSize: 13,
-    fontWeight: Font.weight.semiBold,
-    color: Colors.textMuted,
-  },
-  langTextActive: {
-    color: Colors.textInverse,
-  },
-  actions: {
-    gap: Space.sm,
-  },
+  langPillActive: { backgroundColor: Colors.green, borderColor: Colors.green },
+  langText:        { fontSize: 13, fontWeight: Font.weight.semiBold, color: Colors.textMuted },
+  langTextActive:  { color: Colors.textInverse },
+  actions:         { gap: Space.sm },
   primaryBtn: {
-    backgroundColor: Colors.green,
-    borderRadius: Layout.radius.md,
-    minHeight: Layout.touch.comfortable,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: Colors.green, borderRadius: Layout.radius.md,
+    minHeight: Layout.touch.comfortable, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: Space.lg,
   },
-  primaryBtnText: {
-    fontSize: Font.size.body,
-    fontWeight: Font.weight.bold,
-    color: Colors.textInverse,
-  },
-  secondaryBtn: {
-    minHeight: Layout.touch.minimum,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryBtnText: {
-    fontSize: 14,
-    color: Colors.green,
-    textDecorationLine: 'underline',
-  },
-  footer: {
-    fontSize: Font.size.caption,
-    color: Colors.textDisabled,
-    textAlign: 'center',
-  },
+  primaryBtnText:   { fontSize: Font.size.body, fontWeight: Font.weight.bold, color: Colors.textInverse },
+  secondaryBtn:     { minHeight: Layout.touch.minimum, alignItems: 'center', justifyContent: 'center' },
+  secondaryBtnText: { fontSize: 14, color: Colors.green, textDecorationLine: 'underline' },
+  footer:           { fontSize: Font.size.caption, color: Colors.textDisabled, textAlign: 'center' },
 });

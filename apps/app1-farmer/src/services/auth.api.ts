@@ -4,7 +4,7 @@ import type { AuthTokens, User } from '../types';
 
 export interface RequestOtpPayload {
   phone: string;
-  countryCode: string;
+  //countryCode: string;
 }
 
 export interface VerifyOtpPayload {
