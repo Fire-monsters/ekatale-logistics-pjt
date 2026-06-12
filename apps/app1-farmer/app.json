@@ -1,0 +1,15 @@
+{
+  "android": {
+    "package": "com.anonymous.ekatale_app"
+  },
+  "ios": {
+    "bundleIdentifier": "com.anonymous.ekatale-app"
+  },
+  "extra": {
+    "eas": {
+      "projectId": "8674f892-6338-44dc-921f-97be904fb3bf"
+    }
+  },
+  "owner": "ekatale-logitics",
+  "slug": "ekatale"
+}
