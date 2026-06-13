@@ -1,7 +1,7 @@
 // apps/app1-farmer/src/constants/index.ts
 import { Platform } from 'react-native';
 
-const LOCAL_IP = '192.168.0.13';
+const LOCAL_IP = '192.168.0.19';
 
 const DEV_API_HOST = Platform.OS === 'android'
   ? LOCAL_IP   // also works for physical devices on same Wi-Fi; use 10.0.2.2 for Android emulator only
