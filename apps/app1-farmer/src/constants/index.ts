@@ -1,5 +1,15 @@
 // apps/app1-farmer/src/constants/index.ts
-export const API_BASE_URL = 'https://api.ekatale.com/v1';
+import { Platform } from 'react-native';
+
+const LOCAL_IP = '192.168.0.13';
+
+const DEV_API_HOST = Platform.OS === 'android'
+  ? LOCAL_IP   // also works for physical devices on same Wi-Fi; use 10.0.2.2 for Android emulator only
+  : LOCAL_IP;
+
+export const API_BASE_URL = __DEV__
+  ? `http://${DEV_API_HOST}:3001/api`
+  : 'https://api.ekatale.com/v1';
 
 export const API_ROUTES = {
   AUTH_REQUEST_OTP:  '/auth/otp/request',

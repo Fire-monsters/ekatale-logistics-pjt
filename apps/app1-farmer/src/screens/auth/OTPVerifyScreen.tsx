@@ -15,26 +15,36 @@ import {
   requestOtp,
   selectAuthLoading,
   selectAuthError,
+  selectPendingPhone,
+  selectPendingPurpose,
   clearError,
 } from '../../store/slices/authSlice';
 
 type Nav   = NativeStackNavigationProp<AuthStackParams>;
 type Route = RouteProp<AuthStackParams, 'OTPVerify'>;
 
-const N               = 6;
-const RESEND_SECONDS  = 60;
+const N              = 6;
+const RESEND_SECONDS = 60;
 
 export default function OTPVerifyScreen() {
   const navigation = useNavigation<Nav>();
   const route      = useRoute<Route>();
   const dispatch   = useAppDispatch();
 
-  const { phone, countryCode, mode, role } = route.params;
-  const fullPhone  = `+${countryCode}${phone}`;
-  const maskedPhone = `+${countryCode} ${phone.slice(0, 3)}*** ${phone.slice(-3)}`;
+  // Phone/purpose come from REDUX STATE (written by requestOtp thunk),
+  // not from navigation params — this is what fixes the 401.
+  const pendingPhone   = useAppSelector(selectPendingPhone);
+  const pendingPurpose = useAppSelector(selectPendingPurpose);
+  const loading        = useAppSelector(selectAuthLoading);
+  const apiError       = useAppSelector(selectAuthError);
 
-  const loading  = useAppSelector(selectAuthLoading);
-  const apiError = useAppSelector(selectAuthError);
+  // role still comes from nav params (only needed for post-verify routing)
+  const { role, countryCode } = route.params;
+
+  // Derive masked display from pendingPhone (e.g. +256770***456)
+  const maskedPhone = pendingPhone
+    ? pendingPhone.replace(/(\+\d{3})(\d{3})(\d+)(\d{3})/, '$1$2***$4')
+    : '—';
 
   const [digits,   setDigits]   = useState<string[]>(Array(N).fill(''));
   const [focused,  setFocused]  = useState(0);
@@ -77,28 +87,27 @@ export default function OTPVerifyScreen() {
     if (code.length < N) { setError('Enter all 6 digits'); return; }
     Keyboard.dismiss();
 
-    const result = await dispatch(verifyOtp({ phone: fullPhone, code, mode }));
+    // verifyOtp reads phone + purpose directly from Redux state
+    const result = await dispatch(verifyOtp({ code }));
 
     if (verifyOtp.rejected.match(result)) {
       setError(result.payload as string ?? 'Invalid or expired code');
-      // Clear digits so user can retype
       setDigits(Array(N).fill(''));
       refs.current[0]?.focus();
       return;
     }
 
     // Success:
-    // • LOGIN mode  → isAuthenticated=true in Redux → RootNavigator auto-switches
-    // • REGISTER mode → navigate to the correct profile setup screen
-    if (mode === 'register') {
+    // • LOGIN  → Redux isAuthenticated=true → RootNavigator auto-swaps (no navigate needed)
+    // • REGISTER → go to profile setup for the chosen role
+    if (result.payload && (result.payload as any).mode === 'register') {
       if (role === 'village_agent') {
-        navigation.navigate('AgentRegister', { phone, countryCode });
+        navigation.navigate('AgentRegister', { phone: '', countryCode });
       } else {
-        navigation.navigate('FarmerRegister', { phone, countryCode });
+        navigation.navigate('FarmerRegister', { phone: '', countryCode });
       }
     }
-    // Login: no navigation needed — Redux state change triggers RootNavigator swap
-  }, [digits, dispatch, fullPhone, mode, navigation, phone, countryCode, role]);
+  }, [digits, dispatch, navigation, role, countryCode]);
 
   // Auto-submit once all 6 digits filled
   useEffect(() => {
@@ -106,13 +115,14 @@ export default function OTPVerifyScreen() {
   }, [digits, handleVerify, loading]);
 
   const handleResend = async () => {
-    if (cooldown > 0) return;
+    if (cooldown > 0 || !pendingPhone || !pendingPurpose) return;
     setCooldown(RESEND_SECONDS);
     setDigits(Array(N).fill(''));
     setError('');
     dispatch(clearError());
     refs.current[0]?.focus();
-    await dispatch(requestOtp({ phone: fullPhone, purpose: mode, role }));
+    // requestOtp re-stores phone+purpose in Redux automatically
+    await dispatch(requestOtp({ phone: pendingPhone, purpose: pendingPurpose, role }));
   };
 
   const displayError = error || apiError || '';
@@ -146,15 +156,15 @@ export default function OTPVerifyScreen() {
           {/* Mode badge */}
           <View style={[
             styles.modeBadge,
-            mode === 'login'
+            pendingPurpose === 'login'
               ? { backgroundColor: '#E3F2FD', borderColor: '#90CAF9' }
               : { backgroundColor: Colors.greenLight, borderColor: Colors.greenBorder },
           ]}>
             <Text style={[
               styles.modeBadgeText,
-              { color: mode === 'login' ? '#1565C0' : Colors.green },
+              { color: pendingPurpose === 'login' ? '#1565C0' : Colors.green },
             ]}>
-              {mode === 'login' ? '🔑 Logging in' : '✨ Creating account'}
+              {pendingPurpose === 'login' ? '🔑 Logging in' : '✨ Creating account'}
             </Text>
           </View>
 
@@ -166,8 +176,8 @@ export default function OTPVerifyScreen() {
                 ref={(r) => { refs.current[i] = r; }}
                 style={[
                   styles.box,
-                  focused === i && styles.boxFocused,
-                  d             && styles.boxFilled,
+                  focused === i  && styles.boxFocused,
+                  d              && styles.boxFilled,
                   !!displayError && styles.boxError,
                 ]}
                 value={d}
@@ -212,7 +222,7 @@ export default function OTPVerifyScreen() {
             {loading
               ? <ActivityIndicator color={Colors.textInverse} />
               : <Text style={styles.verifyBtnText}>
-                  {mode === 'login' ? 'Verify & Log In' : 'Verify & Continue'}
+                  {pendingPurpose === 'login' ? 'Verify & Log In' : 'Verify & Continue'}
                 </Text>
             }
           </TouchableOpacity>
@@ -241,18 +251,13 @@ const styles = StyleSheet.create({
     width: 72, height: 72, borderRadius: 36,
     backgroundColor: Colors.greenLight, alignItems: 'center', justifyContent: 'center',
   },
-  icon:     { fontSize: 40 },
-  title:    { fontSize: Font.size.heading, fontWeight: Font.weight.bold, color: Colors.textPrimary, textAlign: 'center' },
-  subtitle: { fontSize: Font.size.body, color: Colors.textMuted, textAlign: 'center', lineHeight: Font.size.body * 1.6 },
+  icon:           { fontSize: 40 },
+  title:          { fontSize: Font.size.heading, fontWeight: Font.weight.bold, color: Colors.textPrimary, textAlign: 'center' },
+  subtitle:       { fontSize: Font.size.body, color: Colors.textMuted, textAlign: 'center', lineHeight: Font.size.body * 1.6 },
   phoneHighlight: { color: Colors.green, fontWeight: Font.weight.bold },
-
-  modeBadge: {
-    borderRadius: Layout.radius.pill, borderWidth: 1,
-    paddingHorizontal: 14, paddingVertical: 6,
-  },
-  modeBadgeText: { fontSize: Font.size.label, fontWeight: Font.weight.semiBold },
-
-  boxRow:   { flexDirection: 'row', gap: 10, marginVertical: Space.sm },
+  modeBadge:      { borderRadius: Layout.radius.pill, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 6 },
+  modeBadgeText:  { fontSize: Font.size.label, fontWeight: Font.weight.semiBold },
+  boxRow:         { flexDirection: 'row', gap: 10, marginVertical: Space.sm },
   box: {
     width: BOX_SIZE, height: BOX_SIZE + 8,
     borderWidth: 2.5, borderColor: '#E5E7EB',
@@ -263,20 +268,19 @@ const styles = StyleSheet.create({
   boxFocused: { borderColor: Colors.green, backgroundColor: '#FAFFFE' },
   boxFilled:  { borderColor: Colors.green, color: Colors.green, backgroundColor: Colors.greenLight },
   boxError:   { borderColor: Colors.error, backgroundColor: Colors.errorLight },
-
-  errorBox:  { backgroundColor: Colors.errorLight, borderRadius: Layout.radius.md, paddingVertical: 10, paddingHorizontal: 16, width: '100%' },
-  errorText: { fontSize: Font.size.label, color: Colors.error, textAlign: 'center', fontWeight: Font.weight.medium },
-
-  resend:        { fontSize: Font.size.body, color: Colors.info, fontWeight: Font.weight.medium, textDecorationLine: 'underline' },
-  resendWaiting: { color: Colors.textDisabled, textDecorationLine: 'none' },
-
+  errorBox:   {
+    backgroundColor: Colors.errorLight, borderRadius: Layout.radius.md,
+    paddingVertical: 10, paddingHorizontal: 16, width: '100%',
+  },
+  errorText:         { fontSize: Font.size.label, color: Colors.error, textAlign: 'center', fontWeight: Font.weight.medium },
+  resend:            { fontSize: Font.size.body, color: Colors.info, fontWeight: Font.weight.medium, textDecorationLine: 'underline' },
+  resendWaiting:     { color: Colors.textDisabled, textDecorationLine: 'none' },
   verifyBtn: {
     backgroundColor: Colors.green, borderRadius: Layout.radius.md,
     minHeight: Layout.touch.comfortable, alignItems: 'center', justifyContent: 'center', width: '100%',
   },
   verifyBtnDisabled: { opacity: 0.4 },
   verifyBtnText:     { fontSize: Font.size.body, fontWeight: Font.weight.bold, color: Colors.textInverse },
-
   voiceBtn: {
     borderWidth: 2, borderColor: Colors.green, borderRadius: Layout.radius.md,
     minHeight: Layout.touch.minimum, paddingHorizontal: Space.lg,

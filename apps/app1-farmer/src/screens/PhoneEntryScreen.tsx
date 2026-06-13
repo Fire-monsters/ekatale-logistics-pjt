@@ -66,9 +66,7 @@ export default function PhoneEntryScreen() {
     }
 
     navigation.navigate('OTPVerify', {
-      phone:       clean,
       countryCode: country.code,
-      mode,
       role,
     });
   };

@@ -42,7 +42,7 @@ export const authApi = {
   refreshToken: (refreshToken: string) =>
     post<{ accessToken: string }>(API_ROUTES.AUTH_REFRESH_TOKEN, { refreshToken }),
 
-  logout: () => post<void>(API_ROUTES.AUTH_LOGOUT),
+  logout: (refreshToken: string) => post<void>(API_ROUTES.AUTH_LOGOUT),
 
   getProfile: () => get<User>(API_ROUTES.AUTH_PROFILE),
 

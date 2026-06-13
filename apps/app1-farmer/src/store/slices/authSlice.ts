@@ -17,8 +17,10 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading:       boolean;
   error:           string | null;
-  /** Phone that has been OTP-verified but registration not yet complete */
+  /** Full phone (+256...) stored when OTP is requested so verify always uses the same value */
   pendingPhone:    string | null;
+  /** 'register' | 'login' — stored when OTP is requested so verify never depends on nav params */
+  pendingPurpose:  'register' | 'login' | null;
   /** Role selected on RoleSelectScreen */
   pendingRole:     'farmer' | 'village_agent' | null;
 }
@@ -30,6 +32,7 @@ const initialState: AuthState = {
   isLoading:       false,
   error:           null,
   pendingPhone:    null,
+  pendingPurpose:  null,
   pendingRole:     null,
 };
 
@@ -60,40 +63,54 @@ export const requestOtp = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      return await authApi.requestOtp(payload);
+      console.log('[requestOtp] →', { phone: payload.phone, purpose: payload.purpose });
+      await authApi.requestOtp(payload);
+      // Return the args so the reducer can store phone + purpose in state
+      return { phone: payload.phone, purpose: payload.purpose };
     } catch (err: any) {
+      console.warn('[requestOtp] ✗', err.message);
       return rejectWithValue(err.message ?? 'Failed to send OTP');
     }
   },
 );
 
 /** Step 2: verify OTP — calls POST /auth/otp/verify
- *  For LOGIN mode it also calls POST /auth/login to get tokens.
- *  For REGISTER mode it only confirms the phone; registration follows separately. */
+ *  Purpose and phone come from Redux state (stored during requestOtp),
+ *  NOT from navigation params — this prevents any param-passing bugs. */
 export const verifyOtp = createAsyncThunk(
   'auth/verifyOtp',
   async (
-    payload: { phone: string; code: string; mode: 'register' | 'login' },
-    { rejectWithValue },
+    payload: { code: string },
+    { rejectWithValue, getState },
   ) => {
     try {
+      const { pendingPhone, pendingPurpose } = (getState() as RootState).auth;
+
+      if (!pendingPhone || !pendingPurpose) {
+        return rejectWithValue('Session expired. Please re-enter your phone number.');
+      }
+
+      console.log('[verifyOtp] →', { phone: pendingPhone, purpose: pendingPurpose, code: payload.code });
+
       const verified = await authApi.verifyOtp({
-        phone:   payload.phone,
+        phone:   pendingPhone,
         code:    payload.code,
-        purpose: payload.mode,
-      });
+        purpose: pendingPurpose,
+      } as any);
+
+      console.log('[verifyOtp] ←', verified);
+
       if (!verified.verified) throw new Error('INVALID_OR_EXPIRED_OTP');
 
-      if (payload.mode === 'login') {
-        // Phone is verified — fetch session tokens
-        const session = await authApi.login(payload.phone);
+      if (pendingPurpose === 'login') {
+        const session = await authApi.login(pendingPhone);
         await persistTokens(session.accessToken, session.refreshToken);
         return { mode: 'login' as const, session };
       }
 
-      // Register mode — phone confirmed, profile form follows
-      return { mode: 'register' as const, phone: payload.phone };
+      return { mode: 'register' as const, phone: pendingPhone };
     } catch (err: any) {
+      console.warn('[verifyOtp] ✗', err.message);
       return rejectWithValue(err.message ?? 'Invalid or expired OTP');
     }
   },
@@ -185,7 +202,12 @@ const authSlice = createSlice({
     // ── requestOtp ────────────────────────────────────────────────────────────
     builder
       .addCase(requestOtp.pending,   (s) => { s.isLoading = true;  s.error = null; })
-      .addCase(requestOtp.fulfilled, (s) => { s.isLoading = false; })
+      .addCase(requestOtp.fulfilled, (s, a) => {
+        s.isLoading      = false;
+        // Store phone + purpose so verifyOtp never needs navigation params
+        s.pendingPhone   = a.payload.phone;
+        s.pendingPurpose = a.payload.purpose;
+      })
       .addCase(requestOtp.rejected,  (s, a) => { s.isLoading = false; s.error = a.payload as string; });
 
     // ── verifyOtp ─────────────────────────────────────────────────────────────
@@ -194,7 +216,6 @@ const authSlice = createSlice({
       .addCase(verifyOtp.fulfilled, (s, a) => {
         s.isLoading = false;
         if (a.payload.mode === 'login') {
-          // Returning user — fully authenticated
           const { session } = a.payload;
           s.user            = {
             id:       session.user.userId,
@@ -206,9 +227,10 @@ const authSlice = createSlice({
           s.tokens          = { accessToken: session.accessToken, refreshToken: session.refreshToken };
           s.isAuthenticated = true;
           s.pendingPhone    = null;
+          s.pendingPurpose  = null;
         } else {
-          // New user — store phone so FarmerRegisterScreen can read it
-          s.pendingPhone = a.payload.phone;
+          // pendingPhone already set — keep it for the register screen
+          s.pendingPurpose = null;
         }
       })
       .addCase(verifyOtp.rejected, (s, a) => { s.isLoading = false; s.error = a.payload as string; });
@@ -229,6 +251,7 @@ const authSlice = createSlice({
         s.tokens          = { accessToken, refreshToken };
         s.isAuthenticated = true;
         s.pendingPhone    = null;
+        s.pendingPurpose  = null;
         s.pendingRole     = null;
       })
       .addCase(completeRegistration.rejected,  (s, a) => { s.isLoading = false; s.error = a.payload as string; });
@@ -257,6 +280,7 @@ export const selectAuthUser        = (s: RootState) => s.auth.user;
 export const selectAuthLoading     = (s: RootState) => s.auth.isLoading;
 export const selectAuthError       = (s: RootState) => s.auth.error;
 export const selectPendingPhone    = (s: RootState) => s.auth.pendingPhone;
+export const selectPendingPurpose  = (s: RootState) => s.auth.pendingPurpose;
 export const selectPendingRole     = (s: RootState) => s.auth.pendingRole;
 export const selectUserRole        = (s: RootState) =>
   s.auth.user?.role ?? (s as any).user?.currentUser?.role;

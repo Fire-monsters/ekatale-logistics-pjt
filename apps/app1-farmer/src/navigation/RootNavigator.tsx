@@ -19,7 +19,8 @@ export type AuthStackParams = {
   RoleSelect:     undefined;
   /** mode='register' → new user flow; mode='login' → returning user */
   PhoneEntry:     { mode: 'register' | 'login'; role?: 'farmer' | 'village_agent' };
-  OTPVerify:      { phone: string; countryCode: string; mode: 'register' | 'login'; role?: 'farmer' | 'village_agent' };
+  /** phone+purpose are in Redux; only role (for post-verify routing) and countryCode needed here */
+  OTPVerify:      { countryCode: string; role?: 'farmer' | 'village_agent' };
   FarmerRegister: { phone: string; countryCode: string };
   AgentRegister:  { phone: string; countryCode: string };
 };

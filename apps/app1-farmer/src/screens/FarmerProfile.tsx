@@ -8,9 +8,8 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Platform,
-  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   ChevronDown,
@@ -47,7 +46,7 @@ const FarmerProfile = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -203,7 +202,7 @@ const FarmerProfile = () => {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -213,8 +212,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
-    paddingTop:
-      Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0,
   },
 
   scrollContent: {
@@ -226,6 +223,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 28,
     overflow: "hidden",
+    width: "100%",
+    maxWidth: 600,
+    alignSelf: "center",
   },
 
   header: {
