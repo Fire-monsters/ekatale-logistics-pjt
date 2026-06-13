@@ -11,8 +11,8 @@ export const otpExpiresAt = (): Date => {
   return new Date(Date.now() + 10 * 60 * 1000)
 }
 
-// In production this calls Africa's Talking SMS API
-// In development it logs to console
+// Sends OTP via Africa's Talking if credentials are configured,
+// otherwise logs to console (dev fallback).
 export const sendOtpSms = async (
   phone: string,
   code: string,
@@ -27,16 +27,28 @@ export const sendOtpSms = async (
 
   const message = messages[purpose] || `Your E-Katale code is ${code}.`
 
-  if (process.env.NODE_ENV === 'production') {
-    // TODO: Africa's Talking integration
-    const AfricasTalking = require('africastalking')
-    const at = AfricasTalking({
-      apiKey:   process.env.AT_API_KEY!,
-      username: process.env.AT_USERNAME!,
-    })
-    await at.SMS.send({ to: [phone], message, from: 'E-Katale' })
+  const hasAtCredentials = !!process.env.AT_API_KEY && !!process.env.AT_USERNAME
+
+  if (hasAtCredentials) {
+    try {
+      const AfricasTalking = require('africastalking')
+      const at = AfricasTalking({
+        apiKey:   process.env.AT_API_KEY!,
+        username: process.env.AT_USERNAME!,
+      })
+      const result = await at.SMS.send({
+        to: [phone],
+        message,
+        from: process.env.AT_SENDER_ID || undefined,
+      })
+      console.log(`\n📱 OTP SMS sent to ${phone} via Africa's Talking:`, JSON.stringify(result))
+    } catch (err) {
+      console.error(`\n❌ Failed to send OTP SMS to ${phone}:`, err)
+      // Always log the code as a fallback so dev/testing isn't blocked
+      console.log(`\n📱 [FALLBACK] OTP for ${phone}: ${code}\n`)
+    }
   } else {
-    // Development: print to console
+    // No AT credentials configured — print to console
     console.log(`\n📱 OTP SMS to ${phone}: ${message}\n`)
   }
 }

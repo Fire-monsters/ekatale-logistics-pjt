@@ -14,6 +14,8 @@ export class AuthService {
   async requestOtp(input: RequestOtpInput) {
     const { phone, purpose } = input
 
+    console.log('📨 REQUEST OTP INPUT:', JSON.stringify(input))
+
     // If registering, check phone is not already taken
     if (purpose === 'register') {
       const existing = await prisma.user.findUnique({ where: { phone } })
@@ -37,7 +39,7 @@ export class AuthService {
 
     // Generate and save new OTP
     const code = generateOtp()
-    await prisma.otp.create({
+    const created = await prisma.otp.create({
       data: {
         phone,
         code,
@@ -45,6 +47,8 @@ export class AuthService {
         expiresAt: otpExpiresAt(),
       },
     })
+
+    console.log('📨 OTP CREATED:', JSON.stringify(created))
 
     // Send via SMS
     await sendOtpSms(phone, code, purpose)
@@ -55,6 +59,17 @@ export class AuthService {
   // ── Step 2: Verify OTP ────────────────────────────────────
   async verifyOtp(input: VerifyOtpInput) {
     const { phone, code, purpose } = input
+
+    console.log('🔍 VERIFY OTP INPUT:', JSON.stringify({ phone, code, purpose, now: new Date().toISOString() }))
+
+    // Show recent OTPs for this phone, regardless of filters,
+    // so we can compare against what's being searched for
+    const candidates = await prisma.otp.findMany({
+      where: { phone },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    })
+    console.log('🔍 CANDIDATES FOR PHONE:', JSON.stringify(candidates, null, 2))
 
     // Find the latest unused, unexpired OTP
     const otp = await prisma.otp.findFirst({
@@ -67,6 +82,8 @@ export class AuthService {
       },
       orderBy: { createdAt: 'desc' },
     })
+
+    console.log('🔍 MATCHED OTP:', JSON.stringify(otp))
 
     if (!otp) throw new Error('INVALID_OR_EXPIRED_OTP')
 
