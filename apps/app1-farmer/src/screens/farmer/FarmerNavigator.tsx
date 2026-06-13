@@ -4,13 +4,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchUserProfile, fetchFarmerProfile } from '../store/slices/userSlice';
-import { selectUserRole } from '../store/slices/authSlice';
-import { selectUnreadCount } from '../store/slices/notificationSlice';
-import { Colors, Font, Space } from '../../theme';
-import type { FarmerStackParams } from '../navigation/RootNavigator';
-import { UserRole } from '../types';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { fetchUserProfile, fetchFarmerProfile } from '../../store/slices/userSlice';
+import { selectUserRole } from '../../store/slices/authSlice';
+import { selectUnreadCount } from '../../store/slices/notificationSlice';
+import { Colors, Font, Space } from '../../../theme';
+import type { FarmerStackParams } from '../../navigation/RootNavigator';
+import { UserRole } from '../../types';
 
 // ─── Screens ──────────────────────────────────────────────────────────────────
 import FarmerDashboard from './FarmerDashboard';
@@ -18,12 +18,12 @@ import ListProduce from './ListProduce';
 import ListProducePhotos from './ListProducePhotos';
 import { MyListings } from './MyListings';
 import { PriceCheck } from './PriceCheck';
-import { PaymentHistory } from './PaymentHistory';
-import { AIAdvisor } from './AIAdvisor';
-import { Notifications } from './Notifications';
+import { PaymentHistory } from '../PaymentHistory';
+import { AIAdvisor } from '../AIAdvisor';
+import { Notifications } from '../Notifications';
 import FarmerProfile from './FarmerProfile';
 import ListingDetail from './ListingDetail';
-import { TransportTracker } from './TransportTracker';
+import { TransportTracker } from '../TransportTracker';
 
 // ─── Tab navigator ────────────────────────────────────────────────────────────
 const Tab = createBottomTabNavigator();

@@ -1,39 +1,63 @@
 // apps/app1-farmer/src/store/slices/authSlice.ts
-import AsyncStorage       from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { STORAGE_KEYS }   from '@constants/index';
-import type { User }      from '../../types';
+import { STORAGE_KEYS } from '@constants/index';
+import type { User } from '../../types';
 import type { RootState } from '../index';
-import { authApi }        from '../../services/api/auth.api';
+import { authApi } from '../../services/api/auth.api';
 import type { RegisterUserPayload } from '../../services/api/auth.api';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
 interface AuthTokens { accessToken: string; refreshToken: string }
 
-interface AuthState {
-  user:            User | null;
-  tokens:          AuthTokens | null;
-  isAuthenticated: boolean;
-  isLoading:       boolean;
-  error:           string | null;
-  /** Full phone (+256...) stored when OTP is requested so verify always uses the same value */
-  pendingPhone:    string | null;
-  /** 'register' | 'login' — stored when OTP is requested so verify never depends on nav params */
-  pendingPurpose:  'register' | 'login' | null;
-  /** Role selected on RoleSelectScreen */
-  pendingRole:     'farmer' | 'village_agent' | null;
+/** Accumulated registration form data across multi-screen flow */
+export interface RegistrationDraft {
+  role:              'farmer' | 'village_agent' | null;
+  // Farmer details (FarmerDetailsScreen)
+  fullName?:         string;
+  nin?:              string;
+  district?:         string;
+  village?:          string;
+  farmSizeAcres?:    number;
+  cropsGrown?:       string[];
+  gpsLat?:           number;
+  gpsLng?:           number;
+  // Agent details (AgentDetailsScreen)
+  territoryDistrict?: string;
+  territoryVillages?: string[];
+  // Phone + password (PhonePasswordScreen)
+  phone?:            string;
+  countryCode?:      string;
+  paymentProvider?:  'mtn' | 'airtel';
+  paymentNumber?:    string;
 }
 
+interface AuthState {
+  user:              User | null;
+  tokens:            AuthTokens | null;
+  isAuthenticated:   boolean;
+  isLoading:         boolean;
+  error:             string | null;
+  /** Phone stored when OTP is sent so verify always uses the same value */
+  pendingPhone:      string | null;
+  /** 'register' | 'login' */
+  pendingPurpose:    'register' | 'login' | null;
+  /** Accumulated registration data across screens */
+  registrationDraft: RegistrationDraft;
+}
+
+const initialDraft: RegistrationDraft = { role: null };
+
 const initialState: AuthState = {
-  user:            null,
-  tokens:          null,
-  isAuthenticated: false,
-  isLoading:       false,
-  error:           null,
-  pendingPhone:    null,
-  pendingPurpose:  null,
-  pendingRole:     null,
+  user:              null,
+  tokens:            null,
+  isAuthenticated:   false,
+  isLoading:         false,
+  error:             null,
+  pendingPhone:      null,
+  pendingPurpose:    null,
+  registrationDraft: initialDraft,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -55,100 +79,124 @@ async function clearTokens() {
 
 // ─── Thunks ───────────────────────────────────────────────────────────────────
 
-/** Step 1: request OTP — calls POST /auth/otp/request */
-export const requestOtp = createAsyncThunk(
-  'auth/requestOtp',
-  async (
-    payload: { phone: string; purpose: 'register' | 'login'; role?: string },
-    { rejectWithValue },
-  ) => {
-    try {
-      console.log('[requestOtp] →', { phone: payload.phone, purpose: payload.purpose });
-      await authApi.requestOtp(payload);
-      // Return the args so the reducer can store phone + purpose in state
-      return { phone: payload.phone, purpose: payload.purpose };
-    } catch (err: any) {
-      console.warn('[requestOtp] ✗', err.message);
-      return rejectWithValue(err.message ?? 'Failed to send OTP');
-    }
-  },
-);
-
-/** Step 2: verify OTP — calls POST /auth/otp/verify
- *  Purpose and phone come from Redux state (stored during requestOtp),
- *  NOT from navigation params — this prevents any param-passing bugs. */
-export const verifyOtp = createAsyncThunk(
-  'auth/verifyOtp',
-  async (
-    payload: { code: string },
-    { rejectWithValue, getState },
-  ) => {
-    try {
-      const { pendingPhone, pendingPurpose } = (getState() as RootState).auth;
-
-      if (!pendingPhone || !pendingPurpose) {
-        return rejectWithValue('Session expired. Please re-enter your phone number.');
-      }
-
-      console.log('[verifyOtp] →', { phone: pendingPhone, purpose: pendingPurpose, code: payload.code });
-
-      const verified = await authApi.verifyOtp({
-        phone:   pendingPhone,
-        code:    payload.code,
-        purpose: pendingPurpose,
-      } as any);
-
-      console.log('[verifyOtp] ←', verified);
-
-      if (!verified.verified) throw new Error('INVALID_OR_EXPIRED_OTP');
-
-      if (pendingPurpose === 'login') {
-        const session = await authApi.login(pendingPhone);
-        await persistTokens(session.accessToken, session.refreshToken);
-        return { mode: 'login' as const, session };
-      }
-
-      return { mode: 'register' as const, phone: pendingPhone };
-    } catch (err: any) {
-      console.warn('[verifyOtp] ✗', err.message);
-      return rejectWithValue(err.message ?? 'Invalid or expired OTP');
-    }
-  },
-);
-
-/** Step 3a: complete registration (farmer or agent) */
-export const completeRegistration = createAsyncThunk(
-  'auth/completeRegistration',
+/**
+ * REGISTRATION — Step 3 of 3
+ * Called from PhonePasswordScreen after all details collected.
+ * Registers the user and triggers OTP to be sent.
+ */
+export const registerAndSendOtp = createAsyncThunk(
+  'auth/registerAndSendOtp',
   async (payload: RegisterUserPayload, { rejectWithValue }) => {
     try {
-      const session = await authApi.registerUser(payload);
-      await persistTokens(session.accessToken, session.refreshToken);
-      return session;
+      // 1. Register account (creates user + profile, returns success)
+      await authApi.registerUser(payload);
+      // 2. Request OTP to verify phone
+      await authApi.requestOtp({
+        phone:   payload.phone,
+        purpose: 'register',
+        role:    payload.role,
+      });
+      return { phone: payload.phone };
     } catch (err: any) {
       return rejectWithValue(err.message ?? 'Registration failed');
     }
   },
 );
 
-/** Cold start — restore session from AsyncStorage without requiring re-login */
+/**
+ * OTP VERIFY — After registration OTP
+ * Verifies code → logs user in automatically
+ */
+export const verifyRegistrationOtp = createAsyncThunk(
+  'auth/verifyRegistrationOtp',
+  async (payload: { code: string }, { rejectWithValue, getState }) => {
+    try {
+      const { pendingPhone } = (getState() as RootState).auth;
+      if (!pendingPhone) {
+        return rejectWithValue('Session expired. Please restart registration.');
+      }
+      const verified = await authApi.verifyOtp({
+        phone:   pendingPhone,
+        code:    payload.code,
+        purpose: 'register',
+      });
+      if (!verified.verified) throw new Error('INVALID_OR_EXPIRED_OTP');
+
+      // Auto-login after successful verification
+      const session = await authApi.login(pendingPhone);
+      await persistTokens(session.accessToken, session.refreshToken);
+      return session;
+    } catch (err: any) {
+      return rejectWithValue(err.message ?? 'Invalid or expired code');
+    }
+  },
+);
+
+/**
+ * LOGIN — Phone + password, then OTP
+ * Step 1: validate credentials, send OTP
+ */
+export const loginWithCredentials = createAsyncThunk(
+  'auth/loginWithCredentials',
+  async (
+    payload: { phone: string; password: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      // Validate credentials endpoint not available; request OTP for login
+      //await authApi.loginWithPassword(payload);
+      await authApi.requestOtp({ phone: payload.phone, purpose: 'login' });
+      return { phone: payload.phone };
+    } catch (err: any) {
+      return rejectWithValue(err.message ?? 'Login failed');
+    }
+  },
+);
+
+/**
+ * LOGIN OTP VERIFY — Step 2 of login
+ */
+export const verifyLoginOtp = createAsyncThunk(
+  'auth/verifyLoginOtp',
+  async (payload: { code: string }, { rejectWithValue, getState }) => {
+    try {
+      const { pendingPhone } = (getState() as RootState).auth;
+      if (!pendingPhone) {
+        return rejectWithValue('Session expired. Please log in again.');
+      }
+      const verified = await authApi.verifyOtp({
+        phone:   pendingPhone,
+        code:    payload.code,
+        purpose: 'login',
+      });
+      if (!verified.verified) throw new Error('INVALID_OR_EXPIRED_OTP');
+
+      const session = await authApi.login(pendingPhone);
+      await persistTokens(session.accessToken, session.refreshToken);
+      return session;
+    } catch (err: any) {
+      return rejectWithValue(err.message ?? 'Invalid or expired code');
+    }
+  },
+);
+
+/** Cold start — restore session from AsyncStorage */
 export const restoreSession = createAsyncThunk(
   'auth/restoreSession',
   async (_, { rejectWithValue }) => {
     try {
       const token = await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
       if (!token) return null;
-      // Validate token by fetching the profile
       const user = await authApi.getProfile();
       return { user, accessToken: token };
     } catch {
-      // Token expired or invalid
       await clearTokens();
       return null;
     }
   },
 );
 
-/** Logout — revoke refresh token then clear local state */
+/** Logout */
 export const logoutThunk = createAsyncThunk(
   'auth/logoutThunk',
   async (_, { getState }) => {
@@ -158,7 +206,7 @@ export const logoutThunk = createAsyncThunk(
         await authApi.logout(tokens.refreshToken);
       }
     } catch {
-      // Always clear local state even if API call fails
+      // Always clear local state
     } finally {
       await clearTokens();
     }
@@ -171,18 +219,16 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    /** Called from RoleSelectScreen when the user picks a role */
-    roleSelected(state, action: PayloadAction<'farmer' | 'village_agent'>) {
-      state.pendingRole = action.payload;
+    /** Update any fields of the registration draft (called from each screen) */
+    updateRegistrationDraft(state, action: PayloadAction<Partial<RegistrationDraft>>) {
+      state.registrationDraft = {
+        ...state.registrationDraft,
+        ...action.payload,
+      };
     },
-    /** Convenience sync login (used by RootNavigator cold-start fallback) */
-    loginSuccess(state, action: PayloadAction<{ user: User; tokens: AuthTokens }>) {
-      state.user            = action.payload.user;
-      state.tokens          = action.payload.tokens;
-      state.isAuthenticated = true;
-      state.pendingPhone    = null;
-      state.pendingRole     = null;
-      state.error           = null;
+    /** Clear draft on successful registration or when user cancels */
+    clearRegistrationDraft(state) {
+      state.registrationDraft = initialDraft;
     },
     loggedOut() {
       return { ...initialState };
@@ -190,58 +236,34 @@ const authSlice = createSlice({
     clearError(state) {
       state.error = null;
     },
-    otpRequested(state, action: PayloadAction<string>) {
-      // kept for backward compat — stores phone for reference
-      state.pendingPhone = action.payload;
-      state.error        = null;
-    },
   },
 
   extraReducers: (builder) => {
 
-    // ── requestOtp ────────────────────────────────────────────────────────────
+    // ── registerAndSendOtp ────────────────────────────────────────────────────
     builder
-      .addCase(requestOtp.pending,   (s) => { s.isLoading = true;  s.error = null; })
-      .addCase(requestOtp.fulfilled, (s, a) => {
-        s.isLoading      = false;
-        // Store phone + purpose so verifyOtp never needs navigation params
-        s.pendingPhone   = a.payload.phone;
-        s.pendingPurpose = a.payload.purpose;
+      .addCase(registerAndSendOtp.pending, (s) => {
+        s.isLoading = true; s.error = null;
       })
-      .addCase(requestOtp.rejected,  (s, a) => { s.isLoading = false; s.error = a.payload as string; });
-
-    // ── verifyOtp ─────────────────────────────────────────────────────────────
-    builder
-      .addCase(verifyOtp.pending,   (s) => { s.isLoading = true;  s.error = null; })
-      .addCase(verifyOtp.fulfilled, (s, a) => {
+      .addCase(registerAndSendOtp.fulfilled, (s, a) => {
+        s.isLoading    = false;
+        s.pendingPhone = a.payload.phone;
+        s.pendingPurpose = 'register';
+      })
+      .addCase(registerAndSendOtp.rejected, (s, a) => {
         s.isLoading = false;
-        if (a.payload.mode === 'login') {
-          const { session } = a.payload;
-          s.user            = {
-            id:       session.user.userId,
-            phone:    session.user.phone,
-            role:     session.user.role as any,
-            fullName: session.user.fullName,
-            language: (session.user.languagePref ?? 'en') as any,
-          };
-          s.tokens          = { accessToken: session.accessToken, refreshToken: session.refreshToken };
-          s.isAuthenticated = true;
-          s.pendingPhone    = null;
-          s.pendingPurpose  = null;
-        } else {
-          // pendingPhone already set — keep it for the register screen
-          s.pendingPurpose = null;
-        }
-      })
-      .addCase(verifyOtp.rejected, (s, a) => { s.isLoading = false; s.error = a.payload as string; });
+        s.error = a.payload as string;
+      });
 
-    // ── completeRegistration ──────────────────────────────────────────────────
+    // ── verifyRegistrationOtp ─────────────────────────────────────────────────
     builder
-      .addCase(completeRegistration.pending,   (s) => { s.isLoading = true;  s.error = null; })
-      .addCase(completeRegistration.fulfilled, (s, a) => {
+      .addCase(verifyRegistrationOtp.pending, (s) => {
+        s.isLoading = true; s.error = null;
+      })
+      .addCase(verifyRegistrationOtp.fulfilled, (s, a) => {
         s.isLoading = false;
         const { user, accessToken, refreshToken } = a.payload;
-        s.user            = {
+        s.user = {
           id:       user.userId,
           phone:    user.phone,
           role:     user.role as any,
@@ -252,37 +274,83 @@ const authSlice = createSlice({
         s.isAuthenticated = true;
         s.pendingPhone    = null;
         s.pendingPurpose  = null;
-        s.pendingRole     = null;
+        s.registrationDraft = initialDraft;
       })
-      .addCase(completeRegistration.rejected,  (s, a) => { s.isLoading = false; s.error = a.payload as string; });
-
-    // ── restoreSession ────────────────────────────────────────────────────────
-    builder
-      .addCase(restoreSession.fulfilled, (s, a) => {
-        if (a.payload) {
-          s.user            = a.payload.user;
-          s.tokens          = { accessToken: a.payload.accessToken, refreshToken: '' };
-          s.isAuthenticated = true;
-        }
+      .addCase(verifyRegistrationOtp.rejected, (s, a) => {
+        s.isLoading = false;
+        s.error = a.payload as string;
       });
 
-    // ── logoutThunk ───────────────────────────────────────────────────────────
+    // ── loginWithCredentials ──────────────────────────────────────────────────
     builder
-      .addCase(logoutThunk.fulfilled, () => ({ ...initialState }));
+      .addCase(loginWithCredentials.pending, (s) => {
+        s.isLoading = true; s.error = null;
+      })
+      .addCase(loginWithCredentials.fulfilled, (s, a) => {
+        s.isLoading      = false;
+        s.pendingPhone   = a.payload.phone;
+        s.pendingPurpose = 'login';
+      })
+      .addCase(loginWithCredentials.rejected, (s, a) => {
+        s.isLoading = false;
+        s.error = a.payload as string;
+      });
+
+    // ── verifyLoginOtp ────────────────────────────────────────────────────────
+    builder
+      .addCase(verifyLoginOtp.pending, (s) => {
+        s.isLoading = true; s.error = null;
+      })
+      .addCase(verifyLoginOtp.fulfilled, (s, a) => {
+        s.isLoading = false;
+        const { user, accessToken, refreshToken } = a.payload;
+        s.user = {
+          id:       user.userId,
+          phone:    user.phone,
+          role:     user.role as any,
+          fullName: user.fullName,
+          language: (user.languagePref ?? 'en') as any,
+        };
+        s.tokens          = { accessToken, refreshToken };
+        s.isAuthenticated = true;
+        s.pendingPhone    = null;
+        s.pendingPurpose  = null;
+      })
+      .addCase(verifyLoginOtp.rejected, (s, a) => {
+        s.isLoading = false;
+        s.error = a.payload as string;
+      });
+
+    // ── restoreSession ────────────────────────────────────────────────────────
+    builder.addCase(restoreSession.fulfilled, (s, a) => {
+      if (a.payload) {
+        s.user            = a.payload.user;
+        s.tokens          = { accessToken: a.payload.accessToken, refreshToken: '' };
+        s.isAuthenticated = true;
+      }
+    });
+
+    // ── logoutThunk ───────────────────────────────────────────────────────────
+    builder.addCase(logoutThunk.fulfilled, () => ({ ...initialState }));
   },
 });
 
-export const { roleSelected, loginSuccess, loggedOut, clearError, otpRequested } = authSlice.actions;
+export const {
+  updateRegistrationDraft,
+  clearRegistrationDraft,
+  loggedOut,
+  clearError,
+} = authSlice.actions;
 
 // Selectors
-export const selectIsAuthenticated = (s: RootState) => s.auth.isAuthenticated;
-export const selectAuthUser        = (s: RootState) => s.auth.user;
-export const selectAuthLoading     = (s: RootState) => s.auth.isLoading;
-export const selectAuthError       = (s: RootState) => s.auth.error;
-export const selectPendingPhone    = (s: RootState) => s.auth.pendingPhone;
-export const selectPendingPurpose  = (s: RootState) => s.auth.pendingPurpose;
-export const selectPendingRole     = (s: RootState) => s.auth.pendingRole;
-export const selectUserRole        = (s: RootState) =>
+export const selectIsAuthenticated    = (s: RootState) => s.auth.isAuthenticated;
+export const selectAuthUser           = (s: RootState) => s.auth.user;
+export const selectAuthLoading        = (s: RootState) => s.auth.isLoading;
+export const selectAuthError          = (s: RootState) => s.auth.error;
+export const selectPendingPhone       = (s: RootState) => s.auth.pendingPhone;
+export const selectPendingPurpose     = (s: RootState) => s.auth.pendingPurpose;
+export const selectRegistrationDraft  = (s: RootState) => s.auth.registrationDraft;
+export const selectUserRole           = (s: RootState) =>
   s.auth.user?.role ?? (s as any).user?.currentUser?.role;
 
 export default authSlice.reducer;

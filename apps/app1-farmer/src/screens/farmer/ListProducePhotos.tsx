@@ -8,11 +8,11 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
-import type { FarmerStackParams } from '../navigation/RootNavigator';
-import { Colors, Font, Space, Layout, getCropEmoji } from '../../theme';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { selectActiveDraft, updateDraft, submitListing, clearDraft } from '../store/slices/listingSlice';
-import { requestCameraPermission, requestGalleryPermission } from '../utils/permissions';
+import type { FarmerStackParams } from '../../navigation/RootNavigator';
+import { Colors, Font, Space, Layout, getCropEmoji } from '../../../theme';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { selectActiveDraft, updateDraft, submitListing, clearDraft } from '../../store/slices/listingSlice';
+import { requestCameraPermission, requestGalleryPermission } from '../../utils/permissions';
 
 type Nav = NativeStackNavigationProp<FarmerStackParams>;
 type Route = RouteProp<FarmerStackParams, 'ListProducePhotos'>;

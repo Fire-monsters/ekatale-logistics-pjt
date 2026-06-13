@@ -7,16 +7,16 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import type { FarmerStackParams } from '../navigation/RootNavigator';
+import type { FarmerStackParams } from '../../navigation/RootNavigator';
 import { GS, Colors, Font, Space, Layout, getCropEmoji } from '@styles/global';
-import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { selectUserProfile } from '../store/slices/userSlice';
-import { selectActiveListings, fetchMyListings } from '../store/slices/listingSlice';
-import { selectUnreadCount } from '../store/slices/notificationSlice';
-import { StatusBadge } from '../components/common';
-import { formatUGX } from '../utils/currency';
-import { timeAgo } from '../utils/date';
-import type { ProduceListing } from '../types';
+import { useAppSelector, useAppDispatch } from '../../store/hooks';
+import { selectUserProfile } from '../../store/slices/userSlice';
+import { selectActiveListings, fetchMyListings } from '../../store/slices/listingSlice';
+import { selectUnreadCount } from '../../store/slices/notificationSlice';
+import { StatusBadge } from '../../components/common';
+import { formatUGX } from '../../utils/currency';
+import { timeAgo } from '../../utils/date';
+import type { ProduceListing } from '../../types';
 
 type Nav = NativeStackNavigationProp<FarmerStackParams>;
 

@@ -8,17 +8,17 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp }                from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { AuthStackParams }           from '../navigation/RootNavigator';
+import type { AuthStackParams }           from '../../navigation/RootNavigator';
 import { GS, Colors, Font, Space, Layout } from '@styles/global';
-import { useAppDispatch, useAppSelector }  from '../store/hooks';
-import {
-  completeRegistration,
+import { useAppDispatch, useAppSelector }  from '../../store/hooks';
+
+import completeRegistration, {
   selectAuthLoading,
   selectAuthError,
   clearError,
   selectPendingPhone,
-} from '../store/slices/authSlice';
-import { DISTRICTS_MVP } from '../constants';
+} from '../../store/slices/authSlice';
+import { DISTRICTS_MVP } from '../../constants';
 
 type Nav   = NativeStackNavigationProp<AuthStackParams>;
 type Route = RouteProp<AuthStackParams, 'AgentRegister'>;

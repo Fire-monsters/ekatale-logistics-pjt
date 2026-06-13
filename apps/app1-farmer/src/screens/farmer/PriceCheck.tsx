@@ -1,9 +1,9 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Colors, Font, Layout, Space, getCropEmoji } from '../../theme';
-import { SectionHeader } from '../components/common';
-import { formatTrend, formatUGX } from '../utils/currency';
+import { Colors, Font, Layout, Space, getCropEmoji } from '../../../theme';
+import { SectionHeader } from '../../components/common';
+import { formatTrend, formatUGX } from '../../utils/currency';
 
 const PRICE_CROPS = [
   { id: 'maize', label: 'Maize' },

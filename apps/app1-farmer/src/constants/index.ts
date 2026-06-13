@@ -3,27 +3,28 @@ import { Platform } from 'react-native';
 
 const LOCAL_IP = '192.168.0.19';
 
-const DEV_API_HOST = Platform.OS === 'android'
-  ? LOCAL_IP   // also works for physical devices on same Wi-Fi; use 10.0.2.2 for Android emulator only
-  : LOCAL_IP;
+const DEV_API_HOST = Platform.OS === 'android' ? LOCAL_IP : LOCAL_IP;
 
 export const API_BASE_URL = __DEV__
   ? `http://${DEV_API_HOST}:3001/api`
   : 'https://api.ekatale.com/v1';
 
 export const API_ROUTES = {
-  AUTH_REQUEST_OTP:  '/auth/otp/request',
-  AUTH_VERIFY_OTP:   '/auth/otp/verify',
-  AUTH_REGISTER:     '/auth/register',
-  AUTH_LOGIN:        '/auth/login',
-  AUTH_REFRESH_TOKEN:'/auth/token/refresh',
-  AUTH_LOGOUT:       '/auth/logout',
-  AUTH_PROFILE:      '/auth/me',
-  FARMER_PROFILE:    '/farmers/me',
+  AUTH_REQUEST_OTP:   '/auth/otp/request',
+  AUTH_VERIFY_OTP:    '/auth/otp/verify',
+  AUTH_REGISTER:      '/auth/register',
+  AUTH_LOGIN:         '/auth/login',
+  AUTH_LOGIN_PASSWORD:'/auth/login/password',
+  AUTH_REFRESH_TOKEN: '/auth/token/refresh',
+  AUTH_LOGOUT:        '/auth/logout',
+  AUTH_PROFILE:       '/auth/me',
+
+  FARMER_PROFILE:          '/farmers/me',
   FARMER_LISTINGS:         '/farmer/listings',
   FARMER_LISTING_CREATE:   '/farmer/listings',
   FARMER_LISTING_BY_ID:    (id: string) => `/farmer/listings/${id}`,
   FARMER_AI_DIAGNOSE:      '/farmer/listings/diagnose',
+
   PRICE_CHECK:             '/prices',
   PRICE_FORECAST:          '/prices/forecast',
   PAYMENT_HISTORY:         '/payments',

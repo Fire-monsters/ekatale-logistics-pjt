@@ -8,21 +8,28 @@ import { selectIsAuthenticated } from '../store/slices/authSlice';
 import { restoreSession } from '../store/slices/authSlice';
 import { Colors } from '../../theme';
 
-// ─── Navigators ───────────────────────────────────────────────────────────────
 import { AuthNavigator } from '../screens/auth/AuthNavigator';
-import { FarmerNavigator } from '../screens/FarmerNavigator';
+import { FarmerNavigator } from '../screens/farmer/FarmerNavigator';
 
-// ─── Route param types ─────────────────────────────────────────────────────────
+// ─── Auth Stack Param Types ────────────────────────────────────────────────────
+// NEW FLOW:
+//   Splash → RoleSelect → FarmerDetails/AgentDetails → PhonePassword → OTPVerify → App
 
 export type AuthStackParams = {
-  Splash:         undefined;
-  RoleSelect:     undefined;
-  /** mode='register' → new user flow; mode='login' → returning user */
-  PhoneEntry:     { mode: 'register' | 'login'; role?: 'farmer' | 'village_agent' };
-  /** phone+purpose are in Redux; only role (for post-verify routing) and countryCode needed here */
-  OTPVerify:      { countryCode: string; role?: 'farmer' | 'village_agent' };
-  FarmerRegister: { phone: string; countryCode: string };
-  AgentRegister:  { phone: string; countryCode: string };
+  Splash:          undefined;
+  RoleSelect:      undefined;
+  /** Collect farmer profile details before phone/password */
+  FarmerDetails:   undefined;
+  /** Collect agent profile details before phone/password */
+  AgentDetails:    undefined;
+  /** Phone number + password entry — always comes after details */
+  PhonePassword:   { role: 'farmer' | 'village_agent' };
+  /** OTP sent to phone on registration completion */
+  OTPVerify:       { countryCode: string; role: 'farmer' | 'village_agent' };
+  /** Returning user login — phone + password only */
+  Login:           undefined;
+  /** Forgot / reset password via OTP */
+  LoginOTPVerify:  { countryCode: string };
 };
 
 export type FarmerStackParams = {
@@ -40,9 +47,16 @@ export type FarmerStackParams = {
   FarmerProfile:     undefined;
 };
 
-export type RootStackParamList = AuthStackParams & FarmerStackParams;
+// Agent stack mirrors farmer for now; expanded in Sprint 3
+export type AgentStackParams = {
+  AgentDashboard:  undefined;
+  MyFarmers:       undefined;
+  RegisterFarmer:  undefined;
+  AgentEarnings:   undefined;
+  Notifications:   undefined;
+};
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+export type RootStackParamList = AuthStackParams & FarmerStackParams & AgentStackParams;
 
 const Root = createNativeStackNavigator();
 
@@ -54,14 +68,11 @@ function LoadingScreen() {
   );
 }
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
-
 export function RootNavigator() {
-  const dispatch       = useAppDispatch();
+  const dispatch        = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [booting, setBooting] = React.useState(true);
 
-  // On cold start: validate persisted token by calling /auth/me
   useEffect(() => {
     dispatch(restoreSession()).finally(() => setBooting(false));
   }, [dispatch]);

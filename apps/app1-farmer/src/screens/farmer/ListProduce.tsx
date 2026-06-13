@@ -6,11 +6,11 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { FarmerStackParams } from '../navigation/RootNavigator';
+import type { FarmerStackParams } from '../../navigation/RootNavigator';
 import { GS, Colors, Font, Space, Layout, getCropEmoji } from '@styles/global';
-import { useAppDispatch } from '../store/hooks';
-import { startDraft, updateDraft } from '../store/slices/listingSlice';
-import type { ProduceUnit, ProduceGrade } from '../types';
+import { useAppDispatch } from '../../store/hooks';
+import { startDraft, updateDraft } from '../../store/slices/listingSlice';
+import type { ProduceUnit, ProduceGrade } from '../../types';
 
 type Nav = NativeStackNavigationProp<FarmerStackParams>;
 

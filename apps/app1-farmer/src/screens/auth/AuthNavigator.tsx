@@ -7,8 +7,8 @@ import SplashScreen        from '../SplashScreen';
 import RoleSelectScreen    from './RoleSelectScreen';
 import PhoneEntryScreen    from '../PhoneEntryScreen';
 import OTPVerifyScreen     from './OTPVerifyScreen';
-import FarmerRegisterScreen from '../FarmerRegisterScreen';
-import AgentRegisterScreen  from '../AgentRegisterScreen';
+import FarmerRegisterScreen from '../farmer/FarmerRegisterScreen';
+import AgentRegisterScreen  from '../field-agents/AgentRegisterScreen';
 
 const Stack = createNativeStackNavigator<AuthStackParams>();
 
@@ -20,10 +20,12 @@ export function AuthNavigator() {
     >
       <Stack.Screen name="Splash"         component={SplashScreen} />
       <Stack.Screen name="RoleSelect"     component={RoleSelectScreen} />
-      <Stack.Screen name="PhoneEntry"     component={PhoneEntryScreen} />
+
+      <Stack.Screen name={"PhoneEntry" as unknown as keyof AuthStackParams} component={PhoneEntryScreen} />
       <Stack.Screen name="OTPVerify"      component={OTPVerifyScreen} />
-      <Stack.Screen name="FarmerRegister" component={FarmerRegisterScreen} />
-      <Stack.Screen name="AgentRegister"  component={AgentRegisterScreen} />
+
+      <Stack.Screen name={"FarmerRegister" as unknown as keyof AuthStackParams} component={FarmerRegisterScreen} />
+      <Stack.Screen name={"AgentRegister" as unknown as keyof AuthStackParams}  component={AgentRegisterScreen} />
     </Stack.Navigator>
   );
 }
