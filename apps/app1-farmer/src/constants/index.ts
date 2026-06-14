@@ -1,7 +1,7 @@
 // apps/app1-farmer/src/constants/index.ts
 import { Platform } from 'react-native';
 
-const LOCAL_IP = '192.168.0.19';
+const LOCAL_IP = '192.168.1.92';
 
 const DEV_API_HOST = Platform.OS === 'android' ? LOCAL_IP : LOCAL_IP;
 
@@ -24,6 +24,12 @@ export const API_ROUTES = {
   FARMER_LISTING_CREATE:   '/farmer/listings',
   FARMER_LISTING_BY_ID:    (id: string) => `/farmer/listings/${id}`,
   FARMER_AI_DIAGNOSE:      '/farmer/listings/diagnose',
+
+  // Field-agent endpoints
+  AGENT_SUMMARY:           '/agents/me/summary',
+  AGENT_FARMERS:           '/agents/me/farmers',
+  AGENT_FARMER_CREATE:     '/agents/me/farmers',
+  AGENT_EARNINGS:          '/agents/me/earnings',
 
   PRICE_CHECK:             '/prices',
   PRICE_FORECAST:          '/prices/forecast',

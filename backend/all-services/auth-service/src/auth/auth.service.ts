@@ -1,3 +1,4 @@
+import bcrypt               from 'bcryptjs'
 import { prisma }           from '../lib/prisma'
 import { generateOtp, otpExpiresAt, sendOtpSms } from '../lib/otp'
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../lib/jwt'
@@ -6,7 +7,10 @@ import type {
   RequestOtpInput,
   VerifyOtpInput,
   CompleteRegistrationInput,
+  LoginWithPasswordInput,
 } from './auth.validation'
+
+const BCRYPT_ROUNDS = 10
 
 export class AuthService {
 
@@ -50,7 +54,7 @@ export class AuthService {
 
     console.log('📨 OTP CREATED:', JSON.stringify(created))
 
-    // Send via SMS
+    // Send via SMS (Africa's Talking — used in all environments)
     await sendOtpSms(phone, code, purpose)
 
     return { message: 'OTP sent successfully' }
@@ -61,15 +65,6 @@ export class AuthService {
     const { phone, code, purpose } = input
 
     console.log('🔍 VERIFY OTP INPUT:', JSON.stringify({ phone, code, purpose, now: new Date().toISOString() }))
-
-    // Show recent OTPs for this phone, regardless of filters,
-    // so we can compare against what's being searched for
-    const candidates = await prisma.otp.findMany({
-      where: { phone },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    })
-    console.log('🔍 CANDIDATES FOR PHONE:', JSON.stringify(candidates, null, 2))
 
     // Find the latest unused, unexpired OTP
     const otp = await prisma.otp.findFirst({
@@ -83,8 +78,6 @@ export class AuthService {
       orderBy: { createdAt: 'desc' },
     })
 
-    console.log('🔍 MATCHED OTP:', JSON.stringify(otp))
-
     if (!otp) throw new Error('INVALID_OR_EXPIRED_OTP')
 
     // Mark OTP as used
@@ -97,23 +90,16 @@ export class AuthService {
   }
 
   // ── Step 3: Complete Registration ─────────────────────────
+  // Registration happens BEFORE OTP verification (details-first flow).
+  // The phone is verified by OTP immediately after this call.
   async register(input: CompleteRegistrationInput) {
-    const { phone, fullName, role, languagePref } = input
-
-    // Confirm phone was OTP-verified (must have a used register OTP)
-    const verifiedOtp = await prisma.otp.findFirst({
-      where: {
-        phone,
-        purpose: 'register',
-        isUsed:  true,
-        expiresAt: { gt: new Date(Date.now() - 30 * 60 * 1000) }, // within last 30 min
-      },
-    })
-    if (!verifiedOtp) throw new Error('PHONE_NOT_VERIFIED')
+    const { phone, fullName, password, role, languagePref } = input
 
     // Check not already registered
     const existing = await prisma.user.findUnique({ where: { phone } })
     if (existing) throw new Error('PHONE_ALREADY_REGISTERED')
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS)
 
     // Create user + role-specific profile in a transaction
     const user = await prisma.$transaction(async (tx: any) => {
@@ -121,6 +107,7 @@ export class AuthService {
         data: {
           phone,
           fullName,
+          passwordHash,
           role:         role as any,
           languagePref: languagePref as any,
           kycStatus:    'pending',
@@ -132,6 +119,7 @@ export class AuthService {
         await tx.farmerProfile.create({
           data: {
             farmerId:        newUser.userId,
+            nationalId:      input.nin,
             district:        input.district!,
             village:         input.village,
             gpsLat:          input.gpsLat,
@@ -157,9 +145,6 @@ export class AuthService {
       return newUser
     })
 
-    // Issue tokens
-    const tokens = await this.issueTokens(user.userId, user.role, user.phone)
-
     return {
       user: {
         userId:   user.userId,
@@ -167,11 +152,32 @@ export class AuthService {
         fullName: user.fullName,
         role:     user.role,
       },
-      ...tokens,
     }
   }
 
-  // ── Login (after OTP verified) ────────────────────────────
+  // ── Login with password (Step 1 of login — before OTP) ────
+  async loginWithPassword(input: LoginWithPasswordInput) {
+    const { phone, password } = input
+
+    const user = await prisma.user.findUnique({
+      where: { phone },
+      select: {
+        userId:       true,
+        phone:        true,
+        passwordHash: true,
+        isActive:     true,
+      },
+    })
+    if (!user) throw new Error('USER_NOT_FOUND')
+    if (!user.isActive) throw new Error('ACCOUNT_SUSPENDED')
+
+    const valid = await bcrypt.compare(password, user.passwordHash)
+    if (!valid) throw new Error('INVALID_CREDENTIALS')
+
+    return { message: 'Credentials valid' }
+  }
+
+  // ── Login (after OTP verified) — issues tokens ────────────
   async login(phone: string, deviceInfo?: object) {
     const user = await prisma.user.findUnique({ where: { phone } })
     if (!user) throw new Error('USER_NOT_FOUND')

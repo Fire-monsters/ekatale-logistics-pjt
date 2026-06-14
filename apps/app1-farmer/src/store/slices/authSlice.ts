@@ -80,17 +80,19 @@ async function clearTokens() {
 // ─── Thunks ───────────────────────────────────────────────────────────────────
 
 /**
- * REGISTRATION — Step 3 of 3
- * Called from PhonePasswordScreen after all details collected.
- * Registers the user and triggers OTP to be sent.
+ * REGISTRATION — final step
+ * Called from PhonePasswordScreen after all details (farmer/agent) collected.
+ * 1. Creates the account (server validates the full payload).
+ * 2. Triggers an OTP to the registered phone via Africa's Talking
+ *    (backend sendOtpSms — AT credentials are read from .env, used in all envs).
  */
 export const registerAndSendOtp = createAsyncThunk(
   'auth/registerAndSendOtp',
   async (payload: RegisterUserPayload, { rejectWithValue }) => {
     try {
-      // 1. Register account (creates user + profile, returns success)
+      // 1. Register account (creates user + role profile, returns success)
       await authApi.registerUser(payload);
-      // 2. Request OTP to verify phone
+      // 2. Request OTP to verify phone (sent via Africa's Talking)
       await authApi.requestOtp({
         phone:   payload.phone,
         purpose: 'register',
@@ -134,7 +136,7 @@ export const verifyRegistrationOtp = createAsyncThunk(
 
 /**
  * LOGIN — Phone + password, then OTP
- * Step 1: validate credentials, send OTP
+ * Step 1: validate credentials, send OTP (via Africa's Talking)
  */
 export const loginWithCredentials = createAsyncThunk(
   'auth/loginWithCredentials',
@@ -143,8 +145,7 @@ export const loginWithCredentials = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      // Validate credentials endpoint not available; request OTP for login
-      //await authApi.loginWithPassword(payload);
+      await authApi.loginWithPassword(payload);
       await authApi.requestOtp({ phone: payload.phone, purpose: 'login' });
       return { phone: payload.phone };
     } catch (err: any) {
@@ -179,6 +180,25 @@ export const verifyLoginOtp = createAsyncThunk(
     }
   },
 );
+
+// Shared handler for both verify thunks' fulfilled state
+function applySession(
+  state: AuthState,
+  session: { user: { userId: string; phone: string; fullName: string; role: string; languagePref?: string }; accessToken: string; refreshToken: string },
+) {
+  const { user, accessToken, refreshToken } = session;
+  state.user = {
+    id:       user.userId,
+    phone:    user.phone,
+    role:     user.role as any,
+    fullName: user.fullName,
+    language: (user.languagePref ?? 'en') as any,
+  };
+  state.tokens          = { accessToken, refreshToken };
+  state.isAuthenticated = true;
+  state.pendingPhone    = null;
+  state.pendingPurpose  = null;
+}
 
 /** Cold start — restore session from AsyncStorage */
 export const restoreSession = createAsyncThunk(
@@ -246,8 +266,8 @@ const authSlice = createSlice({
         s.isLoading = true; s.error = null;
       })
       .addCase(registerAndSendOtp.fulfilled, (s, a) => {
-        s.isLoading    = false;
-        s.pendingPhone = a.payload.phone;
+        s.isLoading      = false;
+        s.pendingPhone   = a.payload.phone;
         s.pendingPurpose = 'register';
       })
       .addCase(registerAndSendOtp.rejected, (s, a) => {
@@ -262,18 +282,7 @@ const authSlice = createSlice({
       })
       .addCase(verifyRegistrationOtp.fulfilled, (s, a) => {
         s.isLoading = false;
-        const { user, accessToken, refreshToken } = a.payload;
-        s.user = {
-          id:       user.userId,
-          phone:    user.phone,
-          role:     user.role as any,
-          fullName: user.fullName,
-          language: (user.languagePref ?? 'en') as any,
-        };
-        s.tokens          = { accessToken, refreshToken };
-        s.isAuthenticated = true;
-        s.pendingPhone    = null;
-        s.pendingPurpose  = null;
+        applySession(s, a.payload as any);
         s.registrationDraft = initialDraft;
       })
       .addCase(verifyRegistrationOtp.rejected, (s, a) => {
@@ -303,18 +312,7 @@ const authSlice = createSlice({
       })
       .addCase(verifyLoginOtp.fulfilled, (s, a) => {
         s.isLoading = false;
-        const { user, accessToken, refreshToken } = a.payload;
-        s.user = {
-          id:       user.userId,
-          phone:    user.phone,
-          role:     user.role as any,
-          fullName: user.fullName,
-          language: (user.languagePref ?? 'en') as any,
-        };
-        s.tokens          = { accessToken, refreshToken };
-        s.isAuthenticated = true;
-        s.pendingPhone    = null;
-        s.pendingPurpose  = null;
+        applySession(s, a.payload as any);
       })
       .addCase(verifyLoginOtp.rejected, (s, a) => {
         s.isLoading = false;
@@ -324,7 +322,7 @@ const authSlice = createSlice({
     // ── restoreSession ────────────────────────────────────────────────────────
     builder.addCase(restoreSession.fulfilled, (s, a) => {
       if (a.payload) {
-        s.user            = a.payload.user;
+        s.user            = a.payload.user as any;
         s.tokens          = { accessToken: a.payload.accessToken, refreshToken: '' };
         s.isAuthenticated = true;
       }
@@ -350,7 +348,6 @@ export const selectAuthError          = (s: RootState) => s.auth.error;
 export const selectPendingPhone       = (s: RootState) => s.auth.pendingPhone;
 export const selectPendingPurpose     = (s: RootState) => s.auth.pendingPurpose;
 export const selectRegistrationDraft  = (s: RootState) => s.auth.registrationDraft;
-export const selectUserRole           = (s: RootState) =>
-  s.auth.user?.role ?? (s as any).user?.currentUser?.role;
+export const selectUserRole           = (s: RootState) => s.auth.user?.role ?? null;
 
 export default authSlice.reducer;

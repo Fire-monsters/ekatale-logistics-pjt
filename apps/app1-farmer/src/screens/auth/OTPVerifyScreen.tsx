@@ -11,12 +11,15 @@ import type { AuthStackParams }           from '../../navigation/RootNavigator';
 import { Colors, Font, Space, Layout }    from '../../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
-  verifyOtp,
-  requestOtp,
+  verifyRegistrationOtp,
+  verifyLoginOtp,
+  registerAndSendOtp,
+  loginWithCredentials,
   selectAuthLoading,
   selectAuthError,
   selectPendingPhone,
   selectPendingPurpose,
+  selectRegistrationDraft,
   clearError,
 } from '../../store/slices/authSlice';
 
@@ -31,15 +34,15 @@ export default function OTPVerifyScreen() {
   const route      = useRoute<Route>();
   const dispatch   = useAppDispatch();
 
-  // Phone/purpose come from REDUX STATE (written by requestOtp thunk),
-  // not from navigation params — this is what fixes the 401.
+  // Phone/purpose come from Redux state (set by registerAndSendOtp / loginWithCredentials)
   const pendingPhone   = useAppSelector(selectPendingPhone);
   const pendingPurpose = useAppSelector(selectPendingPurpose);
+  const draft          = useAppSelector(selectRegistrationDraft);
   const loading        = useAppSelector(selectAuthLoading);
   const apiError       = useAppSelector(selectAuthError);
 
-  // role still comes from nav params (only needed for post-verify routing)
-  const { role, countryCode } = route.params;
+  // Role still comes from nav params (for display purposes)
+  const { countryCode } = route.params;
 
   // Derive masked display from pendingPhone (e.g. +256770***456)
   const maskedPhone = pendingPhone
@@ -87,27 +90,26 @@ export default function OTPVerifyScreen() {
     if (code.length < N) { setError('Enter all 6 digits'); return; }
     Keyboard.dismiss();
 
-    // verifyOtp reads phone + purpose directly from Redux state
-    const result = await dispatch(verifyOtp({ code }));
-
-    if (verifyOtp.rejected.match(result)) {
-      setError(result.payload as string ?? 'Invalid or expired code');
-      setDigits(Array(N).fill(''));
-      refs.current[0]?.focus();
-      return;
-    }
-
-    // Success:
-    // • LOGIN  → Redux isAuthenticated=true → RootNavigator auto-swaps (no navigate needed)
-    // • REGISTER → go to profile setup for the chosen role
-    if (result.payload && (result.payload as any).mode === 'register') {
-      if (role === 'village_agent') {
-        navigation.navigate('AgentRegister', { phone: '', countryCode });
-      } else {
-        navigation.navigate('FarmerRegister', { phone: '', countryCode });
+    if (pendingPurpose === 'register') {
+      // verifyRegistrationOtp: verifies code, auto-logs in, sets isAuthenticated=true
+      // RootNavigator auto-switches to FarmerNavigator / AgentNavigator — no navigate() needed
+      const result = await dispatch(verifyRegistrationOtp({ code }));
+      if (verifyRegistrationOtp.rejected.match(result)) {
+        setError(result.payload as string ?? 'Invalid or expired code');
+        setDigits(Array(N).fill(''));
+        refs.current[0]?.focus();
+      }
+      // On success: Redux isAuthenticated → true → RootNavigator auto-switches
+    } else {
+      // LOGIN: verifyLoginOtp, then RootNavigator auto-switches
+      const result = await dispatch(verifyLoginOtp({ code }));
+      if (verifyLoginOtp.rejected.match(result)) {
+        setError(result.payload as string ?? 'Invalid or expired code');
+        setDigits(Array(N).fill(''));
+        refs.current[0]?.focus();
       }
     }
-  }, [digits, dispatch, navigation, role, countryCode]);
+  }, [digits, dispatch, pendingPurpose]);
 
   // Auto-submit once all 6 digits filled
   useEffect(() => {
@@ -121,8 +123,30 @@ export default function OTPVerifyScreen() {
     setError('');
     dispatch(clearError());
     refs.current[0]?.focus();
-    // requestOtp re-stores phone+purpose in Redux automatically
-    await dispatch(requestOtp({ phone: pendingPhone, purpose: pendingPurpose, role }));
+
+    if (pendingPurpose === 'register' && draft.phone && draft.role) {
+      // Re-trigger the full register+OTP flow using saved draft
+      await dispatch(registerAndSendOtp({
+        phone:            pendingPhone,
+        fullName:         draft.fullName!,
+        password:         '', // password already saved server-side; resend only re-sends OTP
+        role:             draft.role,
+        district:         draft.district,
+        village:          draft.village,
+        farmSizeAcres:    draft.farmSizeAcres,
+        cropsGrown:       draft.cropsGrown,
+        paymentProvider:  draft.paymentProvider,
+        paymentNumber:    draft.paymentNumber,
+        gpsLat:           draft.gpsLat,
+        gpsLng:           draft.gpsLng,
+        territoryDistrict: draft.territoryDistrict,
+        territoryVillages: draft.territoryVillages,
+      } as any));
+    } else if (pendingPurpose === 'login') {
+      // For login resend, we just call requestOtp directly via loginWithCredentials
+      // but we don't have the password here — show a message to go back instead
+      setError('To resend, please go back and log in again.');
+    }
   };
 
   const displayError = error || apiError || '';

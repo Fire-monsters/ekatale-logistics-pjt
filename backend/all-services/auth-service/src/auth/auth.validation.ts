@@ -23,6 +23,7 @@ export const VerifyOtpSchema = z.object({
 export const CompleteRegistrationSchema = z.object({
   phone:        ugandaPhone,
   fullName:     z.string().min(2).max(255),
+  password:     z.string().min(6, 'Password must be at least 6 characters').max(72),
   role:         z.enum([
     'farmer', 'village_agent', 'warehouse',
     'sme', 'grocery', 'consumer', 'transport'
@@ -32,6 +33,7 @@ export const CompleteRegistrationSchema = z.object({
   // Farmer-specific — required when role === 'farmer'
   district:       z.string().min(2).max(100).optional(),
   village:        z.string().max(100).optional(),
+  nin:            z.string().max(20).optional(),
   gpsLat:         z.number().min(-90).max(90).optional(),
   gpsLng:         z.number().min(-180).max(180).optional(),
   farmSizeAcres:  z.number().positive().optional(),
@@ -56,10 +58,16 @@ export const CompleteRegistrationSchema = z.object({
   message: 'Missing required fields for this role',
 })
 
+export const LoginWithPasswordSchema = z.object({
+  phone:    ugandaPhone,
+  password: z.string().min(1, 'Enter your password'),
+})
+
 export const RefreshTokenSchema = z.object({
   refreshToken: z.string().min(1),
 })
 
-export type RequestOtpInput         = z.infer<typeof RequestOtpSchema>
-export type VerifyOtpInput          = z.infer<typeof VerifyOtpSchema>
+export type RequestOtpInput           = z.infer<typeof RequestOtpSchema>
+export type VerifyOtpInput            = z.infer<typeof VerifyOtpSchema>
 export type CompleteRegistrationInput = z.infer<typeof CompleteRegistrationSchema>
+export type LoginWithPasswordInput    = z.infer<typeof LoginWithPasswordSchema>

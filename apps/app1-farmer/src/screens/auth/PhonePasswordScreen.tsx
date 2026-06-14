@@ -6,12 +6,14 @@ import {
   ScrollView, TextInput, Alert, ActivityIndicator,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
+
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParams } from '../../navigation/RootNavigator';
 import { Colors, Font, Space, Layout } from '../../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
+
 import {
   registerAndSendOtp,
   selectAuthLoading,

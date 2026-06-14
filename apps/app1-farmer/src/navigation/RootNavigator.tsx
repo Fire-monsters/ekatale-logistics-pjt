@@ -4,15 +4,17 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { selectIsAuthenticated } from '../store/slices/authSlice';
+import { selectIsAuthenticated, selectUserRole } from '../store/slices/authSlice';
 import { restoreSession } from '../store/slices/authSlice';
 import { Colors } from '../../theme';
+import { UserRole } from '../types';
 
 import { AuthNavigator } from '../screens/auth/AuthNavigator';
 import { FarmerNavigator } from '../screens/farmer/FarmerNavigator';
+import { AgentNavigator } from '../screens/field-agents/AgentNavigator';
 
 // ─── Auth Stack Param Types ────────────────────────────────────────────────────
-// NEW FLOW:
+// FLOW (details-first):
 //   Splash → RoleSelect → FarmerDetails/AgentDetails → PhonePassword → OTPVerify → App
 
 export type AuthStackParams = {
@@ -24,12 +26,10 @@ export type AuthStackParams = {
   AgentDetails:    undefined;
   /** Phone number + password entry — always comes after details */
   PhonePassword:   { role: 'farmer' | 'village_agent' };
-  /** OTP sent to phone on registration completion */
+  /** OTP sent to phone on registration completion (and on login) */
   OTPVerify:       { countryCode: string; role: 'farmer' | 'village_agent' };
   /** Returning user login — phone + password only */
   Login:           undefined;
-  /** Forgot / reset password via OTP */
-  LoginOTPVerify:  { countryCode: string };
 };
 
 export type FarmerStackParams = {
@@ -47,13 +47,14 @@ export type FarmerStackParams = {
   FarmerProfile:     undefined;
 };
 
-// Agent stack mirrors farmer for now; expanded in Sprint 3
 export type AgentStackParams = {
-  AgentDashboard:  undefined;
-  MyFarmers:       undefined;
-  RegisterFarmer:  undefined;
-  AgentEarnings:   undefined;
-  Notifications:   undefined;
+  AgentDashboard:    undefined;
+  MyFarmers:         undefined;
+  RegisterFarmer:    undefined;
+  FarmerProfileView: { farmerId: string };
+  AgentEarnings:     undefined;
+  Notifications:     undefined;
+  AgentProfile:      undefined;
 };
 
 export type RootStackParamList = AuthStackParams & FarmerStackParams & AgentStackParams;
@@ -71,6 +72,7 @@ function LoadingScreen() {
 export function RootNavigator() {
   const dispatch        = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const role            = useAppSelector(selectUserRole);
   const [booting, setBooting] = React.useState(true);
 
   useEffect(() => {
@@ -83,7 +85,11 @@ export function RootNavigator() {
     <NavigationContainer>
       <Root.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {isAuthenticated ? (
-          <Root.Screen name="Farmer" component={FarmerNavigator} />
+          role === UserRole.VILLAGE_AGENT ? (
+            <Root.Screen name="Agent" component={AgentNavigator} />
+          ) : (
+            <Root.Screen name="Farmer" component={FarmerNavigator} />
+          )
         ) : (
           <Root.Screen name="Auth" component={AuthNavigator} />
         )}

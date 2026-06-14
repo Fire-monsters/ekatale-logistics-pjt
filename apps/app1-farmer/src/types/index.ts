@@ -1,9 +1,12 @@
 export enum UserRole {
-  FARMER = 'FARMER',
-  CONSUMER = 'CONSUMER',
-  WAREHOUSE = 'WAREHOUSE',
-  TRANSPORT = 'TRANSPORT',
-  ADMIN = 'ADMIN',
+  FARMER = 'farmer',
+  VILLAGE_AGENT = 'village_agent',
+  WAREHOUSE = 'warehouse',
+  SME = 'sme',
+  GROCERY = 'grocery',
+  CONSUMER = 'consumer',
+  TRANSPORT = 'transport',
+  ADMIN = 'admin',
 }
 
 export type Language = 'en' | 'lg' | 'sw' | 'rn';
@@ -31,6 +34,16 @@ export interface FarmerProfile {
   paymentNumber?: string;
   gpsLat?: number;
   gpsLng?: number;
+}
+
+export interface AgentProfile {
+  userId?: string;
+  fullName?: string;
+  territoryDistrict?: string;
+  territoryVillages?: string[];
+  commissionRate?: number;
+  totalFarmersReg?: number;
+  totalEarnings?: number;
 }
 
 export interface AuthTokens {

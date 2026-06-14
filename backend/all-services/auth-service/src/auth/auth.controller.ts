@@ -4,6 +4,7 @@ import {
   RequestOtpSchema,
   VerifyOtpSchema,
   CompleteRegistrationSchema,
+  LoginWithPasswordSchema,
   RefreshTokenSchema,
 } from './auth.validation'
 import { prisma } from '../lib/prisma'
@@ -15,6 +16,7 @@ const handleError = (error: unknown, res: Response) => {
     USER_NOT_FOUND:           404,
     ACCOUNT_SUSPENDED:        403,
     INVALID_OR_EXPIRED_OTP:   401,
+    INVALID_CREDENTIALS:      401,
     PHONE_NOT_VERIFIED:       401,
     INVALID_REFRESH_TOKEN:    401,
     REFRESH_TOKEN_REVOKED:    401,
@@ -26,24 +28,26 @@ const handleError = (error: unknown, res: Response) => {
 
 export class AuthController {
 
-    async getProfile(req: Request, res: Response) {
-  try {
-    const userId = req.user!.userId
-    const user   = await prisma.user.findUnique({
-      where:   { userId },
-      include: {
-        farmerProfile:  true,
-        agentProfile:   true,
-      },
-    })
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'USER_NOT_FOUND' })
+  async getProfile(req: Request, res: Response) {
+    try {
+      const userId = req.user!.userId
+      const user   = await prisma.user.findUnique({
+        where:   { userId },
+        include: {
+          farmerProfile:  true,
+          agentProfile:   true,
+        },
+      })
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'USER_NOT_FOUND' })
+      }
+      // Never return passwordHash to the client
+      const { passwordHash: _, ...safeUser } = user as any
+      res.status(200).json({ success: true, data: safeUser })
+    } catch (error) {
+      handleError(error, res)
     }
-    res.status(200).json({ success: true, data: user })
-  } catch (error) {
-    handleError(error, res)
-   }
- }
+  }
 
   async requestOtp(req: Request, res: Response, next: NextFunction) {
     try {
@@ -75,9 +79,31 @@ export class AuthController {
     }
   }
 
+  /**
+   * POST /auth/login/password
+   * Validates phone + password credentials (Step 1 of login).
+   * On success, the client then calls /auth/otp/request to send the OTP.
+   */
+  async loginWithPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const input = LoginWithPasswordSchema.parse(req.body)
+      const result = await authService.loginWithPassword(input)
+      res.status(200).json({ success: true, data: result })
+    } catch (error) {
+      handleError(error, res)
+    }
+  }
+
+  /**
+   * POST /auth/login
+   * Called after OTP verification — issues access + refresh tokens.
+   */
   async login(req: Request, res: Response, next: NextFunction) {
     try {
-      const { phone } = VerifyOtpSchema.parse(req.body)
+      const { phone } = req.body as { phone: string }
+      if (!phone) {
+        return res.status(400).json({ success: false, error: 'PHONE_REQUIRED' })
+      }
       const result = await authService.login(phone, {
         userAgent: req.headers['user-agent'],
         ip:        req.ip,
@@ -101,7 +127,7 @@ export class AuthController {
   async logout(req: Request, res: Response, next: NextFunction) {
     try {
       const { refreshToken } = RefreshTokenSchema.parse(req.body)
-      const userId = (req as any).user.userId
+      const userId = req.user!.userId
       const result = await authService.logout(userId, refreshToken)
       res.status(200).json({ success: true, data: result })
     } catch (error) {
