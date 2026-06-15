@@ -10,6 +10,7 @@ import type { FarmerStackParams } from '../../navigation/RootNavigator';
 import { GS, Colors, Font, Space, Layout, getCropEmoji } from '@styles/global';
 import { useAppDispatch } from '../../store/hooks';
 import { startDraft, updateDraft } from '../../store/slices/listingSlice';
+import { SafeScreen } from '../../components';
 import type { ProduceUnit, ProduceGrade } from '../../types';
 
 type Nav = NativeStackNavigationProp<FarmerStackParams>;
@@ -84,12 +85,13 @@ export default function ListProduce() {
   };
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: Colors.surface }}
-      contentContainerStyle={s.scroll}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-    >
+    <SafeScreen padded={false} backgroundColor={Colors.surface}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: Colors.surface }}
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
       {/* Header */}
       <TouchableOpacity style={GS.back} onPress={() => navigation.goBack()}>
         <Text style={GS.backText}>← Back</Text>
@@ -222,7 +224,8 @@ export default function ListProduce() {
       >
         <Text style={s.nextBtnText}>Next → Add Photos & AI Check</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </SafeScreen>
   );
 }
 

@@ -10,11 +10,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParams }           from '../../navigation/RootNavigator';
 import { Colors, Font, Space, Layout }    from '../../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
+// Update this import — remove registerAndSendOtp, add new thunks
+
 import {
   verifyRegistrationOtp,
+  completeRegistration,   // ← new
   verifyLoginOtp,
-  registerAndSendOtp,
-  loginWithCredentials,
+  requestOtpOnly,         // ← new (replaces registerAndSendOtp in resend)
+  sendRegistrationOtp,    // ← new name for what was registerAndSendOtp
   selectAuthLoading,
   selectAuthError,
   selectPendingPhone,
@@ -22,6 +25,8 @@ import {
   selectRegistrationDraft,
   clearError,
 } from '../../store/slices/authSlice';
+
+import { authApi } from '@services/api/auth.api';
 
 type Nav   = NativeStackNavigationProp<AuthStackParams>;
 type Route = RouteProp<AuthStackParams, 'OTPVerify'>;
@@ -85,69 +90,65 @@ export default function OTPVerifyScreen() {
     if (!digits[idx] && idx > 0) refs.current[idx - 1]?.focus();
   };
 
-  const handleVerify = useCallback(async () => {
-    const code = digits.join('');
-    if (code.length < N) { setError('Enter all 6 digits'); return; }
-    Keyboard.dismiss();
+// Replace handleVerify
+const handleVerify = useCallback(async () => {
+  const code = digits.join('');
+  if (code.length < N) { setError('Enter all 6 digits'); return; }
+  Keyboard.dismiss();
 
-    if (pendingPurpose === 'register') {
-      // verifyRegistrationOtp: verifies code, auto-logs in, sets isAuthenticated=true
-      // RootNavigator auto-switches to FarmerNavigator / AgentNavigator — no navigate() needed
-      const result = await dispatch(verifyRegistrationOtp({ code }));
-      if (verifyRegistrationOtp.rejected.match(result)) {
-        setError(result.payload as string ?? 'Invalid or expired code');
-        setDigits(Array(N).fill(''));
-        refs.current[0]?.focus();
-      }
-      // On success: Redux isAuthenticated → true → RootNavigator auto-switches
-    } else {
-      // LOGIN: verifyLoginOtp, then RootNavigator auto-switches
-      const result = await dispatch(verifyLoginOtp({ code }));
-      if (verifyLoginOtp.rejected.match(result)) {
-        setError(result.payload as string ?? 'Invalid or expired code');
-        setDigits(Array(N).fill(''));
-        refs.current[0]?.focus();
-      }
+  if (pendingPurpose === 'register') {
+
+    // Step 2: verify the OTP code
+    const verifyResult = await dispatch(verifyRegistrationOtp({ code }));
+    if (verifyRegistrationOtp.rejected.match(verifyResult)) {
+      setError(verifyResult.payload as string ?? 'Invalid or expired code');
+      setDigits(Array(N).fill(''));
+      refs.current[0]?.focus();
+      return;
     }
-  }, [digits, dispatch, pendingPurpose]);
+
+    // Step 3: create user + issue JWT using draft saved in Redux
+    const registerResult = await dispatch(completeRegistration());
+    if (completeRegistration.rejected.match(registerResult)) {
+      setError(registerResult.payload as string ?? 'Registration failed');
+    }
+    // On success: applySession fires → isAuthenticated=true → RootNavigator switches
+
+  } else {
+    const result = await dispatch(verifyLoginOtp({ code }));
+    if (verifyLoginOtp.rejected.match(result)) {
+      setError(result.payload as string ?? 'Invalid or expired code');
+      setDigits(Array(N).fill(''));
+      refs.current[0]?.focus();
+    }
+  }
+}, [digits, dispatch, pendingPurpose]);
 
   // Auto-submit once all 6 digits filled
   useEffect(() => {
     if (digits.every((d) => d) && !loading) handleVerify();
   }, [digits, handleVerify, loading]);
 
-  const handleResend = async () => {
-    if (cooldown > 0 || !pendingPhone || !pendingPurpose) return;
-    setCooldown(RESEND_SECONDS);
-    setDigits(Array(N).fill(''));
-    setError('');
-    dispatch(clearError());
-    refs.current[0]?.focus();
+// Replace handleResend
+const handleResend = async () => {
+  if (cooldown > 0 || !pendingPhone || !pendingPurpose) return;
+  setCooldown(RESEND_SECONDS);
+  setDigits(Array(N).fill(''));
+  setError('');
+  dispatch(clearError());
+  refs.current[0]?.focus();
 
-    if (pendingPurpose === 'register' && draft.phone && draft.role) {
-      // Re-trigger the full register+OTP flow using saved draft
-      await dispatch(registerAndSendOtp({
-        phone:            pendingPhone,
-        fullName:         draft.fullName!,
-        password:         '', // password already saved server-side; resend only re-sends OTP
-        role:             draft.role,
-        district:         draft.district,
-        village:          draft.village,
-        farmSizeAcres:    draft.farmSizeAcres,
-        cropsGrown:       draft.cropsGrown,
-        paymentProvider:  draft.paymentProvider,
-        paymentNumber:    draft.paymentNumber,
-        gpsLat:           draft.gpsLat,
-        gpsLng:           draft.gpsLng,
-        territoryDistrict: draft.territoryDistrict,
-        territoryVillages: draft.territoryVillages,
-      } as any));
-    } else if (pendingPurpose === 'login') {
-      // For login resend, we just call requestOtp directly via loginWithCredentials
-      // but we don't have the password here — show a message to go back instead
-      setError('To resend, please go back and log in again.');
-    }
-  };
+  if (pendingPurpose === 'register') {
+    // Only re-send OTP — user is NOT created yet so no duplicate risk
+    await dispatch(requestOtpOnly({
+      phone:   pendingPhone,
+      purpose: 'register',
+      role:    draft.role ?? undefined,
+    }));
+  } else {
+    setError('To resend, please go back and log in again.');
+  }
+};
 
   const displayError = error || apiError || '';
 

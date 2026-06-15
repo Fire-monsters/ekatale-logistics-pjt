@@ -1,5 +1,6 @@
 // services/auth-service/src/server.ts
 
+import './lib/env'
 import app        from './app'
 import { prisma } from './lib/prisma'
 

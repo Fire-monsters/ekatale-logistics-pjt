@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator,
@@ -12,9 +12,10 @@ import type { FarmerStackParams } from '../../navigation/RootNavigator';
 import { Colors, Font, Space, Layout, getCropEmoji } from '../../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchListingById, selectListingById } from '../../store/slices/listingSlice';
+import { SafeScreen } from '../../components';
 import { StatusBadge } from '../../components/common';
 import { formatUGX } from '../../utils/currency';
-import { formatDateMedium, timeAgo } from '../../utils/date';
+import { formatDateMedium } from '../../utils/date';
 
 type Nav = NativeStackNavigationProp<FarmerStackParams>;
 type Route = RouteProp<FarmerStackParams, 'ListingDetail'>;
@@ -53,26 +54,28 @@ export default function ListingDetail() {
 
   if (isLoading || !listing) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bg }}>
-        <ActivityIndicator color={Colors.green} size="large" />
-      </View>
+      <SafeScreen padded={false} backgroundColor={Colors.bg}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bg }}>
+          <ActivityIndicator color={Colors.green} size="large" />
+        </View>
+      </SafeScreen>
     );
   }
 
   const timelineIdx = getTimelineIndex(listing.status);
-  const isTerminal = ['PAID', 'REJECTED', 'CANCELLED', 'EXPIRED'].includes(listing.status);
   const isRejected = ['REJECTED', 'CANCELLED'].includes(listing.status);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: Colors.bg }} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Text style={s.backArrow}>←</Text>
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Listing Details</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <SafeScreen padded={false} backgroundColor={Colors.bg}>
+      <ScrollView style={{ flex: 1, backgroundColor: Colors.bg }} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+            <Text style={s.backArrow}>←</Text>
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>Listing Details</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
       <View style={{ padding: Space.md, gap: Space.md }}>
         {/* Hero card */}
@@ -178,7 +181,8 @@ export default function ListingDetail() {
           <Text style={s.supportPhone}>Call 0800-100-200 (Free)</Text>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeScreen>
   );
 }
 

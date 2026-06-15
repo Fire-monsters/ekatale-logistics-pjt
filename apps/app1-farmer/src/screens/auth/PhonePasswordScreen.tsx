@@ -15,7 +15,7 @@ import { Colors, Font, Space, Layout } from '../../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 
 import {
-  registerAndSendOtp,
+  sendRegistrationOtp,
   selectAuthLoading,
   selectAuthError,
   clearError,
@@ -95,9 +95,14 @@ export default function PhonePasswordScreen() {
     return Object.keys(e).length === 0;
   };
 
+  const isSubmittingRef = useRef(false)
+
   const handleSubmit = async () => {
-    if (!validate()) return;
-    dispatch(clearError());
+      if (!validate()) return
+      if (isSubmittingRef.current) return  // ← guard against double-tap
+      isSubmittingRef.current = true
+
+      dispatch(clearError());
 
     const fullPhone = `+${country.code}${phone.replace(/\s/g, '')}`;
 
@@ -128,9 +133,9 @@ export default function PhonePasswordScreen() {
       });
     }
 
-    const result = await dispatch(registerAndSendOtp(payload));
+    const result = await dispatch(sendRegistrationOtp(payload));
 
-    if (registerAndSendOtp.rejected.match(result)) {
+    if (sendRegistrationOtp.rejected.match(result)) {
       Alert.alert(
         'Registration Failed',
         (result.payload as string) ?? 'Please check your details and try again.',
@@ -142,6 +147,9 @@ export default function PhonePasswordScreen() {
       countryCode: country.code,
       role,
     });
+
+    isSubmittingRef.current = false
+
   };
 
   return (

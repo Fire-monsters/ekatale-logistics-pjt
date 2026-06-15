@@ -91,7 +91,8 @@ export class AuthService {
 
   // ── Step 3: Complete Registration ─────────────────────────
   // Registration happens BEFORE OTP verification (details-first flow).
-  // The phone is verified by OTP immediately after this call.
+  // The phone is verified by OTP immediately after this call
+
   async register(input: CompleteRegistrationInput) {
     const { phone, fullName, password, role, languagePref } = input
 
@@ -143,17 +144,17 @@ export class AuthService {
       }
 
       return newUser
-    })
-
-    return {
-      user: {
-        userId:   user.userId,
-        phone:    user.phone,
-        fullName: user.fullName,
-        role:     user.role,
-      },
-    }
+    }).catch((err: any) => {
+  if (err.code === 'P2002') {
+    // P2002 = Prisma unique constraint violation
+    const field = err.meta?.target?.[0]
+    if (field === 'national_id') throw new Error('NATIONAL_ID_ALREADY_REGISTERED')
+    if (field === 'phone') throw new Error('PHONE_ALREADY_REGISTERED')
+    throw new Error('DUPLICATE_ENTRY')
   }
+    throw err
+  })
+}
 
   // ── Login with password (Step 1 of login — before OTP) ────
   async loginWithPassword(input: LoginWithPasswordInput) {

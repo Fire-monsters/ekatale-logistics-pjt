@@ -8,6 +8,7 @@ import type { FarmerStackParams } from '../../navigation/RootNavigator';
 import { GS, Colors, Space, getCropEmoji } from '@styles/global';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchMyListings, selectAllListings } from '../../store/slices/listingSlice';
+import { SafeScreen } from '../../components';
 import { Button, EmptyState, StatusBadge } from '../../components/common';
 import { timeAgo } from '../../utils/date';
 import type { ProduceListing } from '../../types';
@@ -56,39 +57,41 @@ export function MyListings() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.bg }}>
-      <View style={styles.header}>
-        <Text style={[GS.pageTitle, { marginBottom: Space.sm }]}>My Orders</Text>
-        <View style={{ flexDirection: 'row' }}>
-          {TABS.map((item) => (
-            <TouchableOpacity
-              key={item.key}
-              style={[GS.tab, tab === item.key && GS.tabActive]}
-              onPress={() => setTab(item.key)}
-            >
-              <Text style={[GS.tabText, tab === item.key && GS.tabTextActive]}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
+    <SafeScreen padded={false} backgroundColor={Colors.bg}>
+      <View style={{ flex: 1, backgroundColor: Colors.bg }}>
+        <View style={styles.header}>
+          <Text style={[GS.pageTitle, { marginBottom: Space.sm }]}>My Orders</Text>
+          <View style={{ flexDirection: 'row' }}>
+            {TABS.map((item) => (
+              <TouchableOpacity
+                key={item.key}
+                style={[GS.tab, tab === item.key && GS.tabActive]}
+                onPress={() => setTab(item.key)}
+              >
+                <Text style={[GS.tabText, tab === item.key && GS.tabTextActive]}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ padding: Space.md, gap: 10, paddingBottom: 32 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={Colors.green} />}
-        ListEmptyComponent={
-          <EmptyState
-            emoji="📋"
-            title={tab === 'active' ? 'No active listings' : 'No completed orders'}
-            description="List your produce to start receiving offers"
-            action={<Button label="+ List Produce" onPress={() => navigation.navigate('ListProduce')} />}
-          />
-        }
-      />
-    </View>
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ padding: Space.md, gap: 10, paddingBottom: 32 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={Colors.green} />}
+          ListEmptyComponent={
+            <EmptyState
+              emoji="📋"
+              title={tab === 'active' ? 'No active listings' : 'No completed orders'}
+              description="List your produce to start receiving offers"
+              action={<Button label="+ List Produce" onPress={() => navigation.navigate('ListProduce')} />}
+            />
+          }
+        />
+      </View>
+    </SafeScreen>
   );
 }
 

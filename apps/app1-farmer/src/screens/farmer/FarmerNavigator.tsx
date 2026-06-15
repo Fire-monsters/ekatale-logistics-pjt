@@ -1,13 +1,16 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import {
+  ClipboardList,
+  CreditCard,
+  Home,
+  Settings,
+} from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchUserProfile, fetchFarmerProfile } from '../../store/slices/userSlice';
 import { selectUserRole } from '../../store/slices/authSlice';
-import { selectUnreadCount } from '../../store/slices/notificationSlice';
 import { Colors, Font, Space } from '../../../theme';
 import type { FarmerStackParams } from '../../navigation/RootNavigator';
 import { UserRole } from '../../types';
@@ -29,55 +32,44 @@ import { TransportTracker } from '../TransportTracker';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<FarmerStackParams>();
 
-// Custom tab bar icon with badge support
+// Custom tab bar item: inactive icons only, active tab gets the label.
 function TabIcon({
-  emoji,
+  Icon,
   label,
   focused,
-  badge,
 }: {
-  emoji: string;
+  Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
   label: string;
   focused: boolean;
-  badge?: number;
 }) {
   return (
-    <View style={styles.tabItem}>
+    <View style={[styles.tabItem, focused && styles.tabItemFocused]}>
       <View style={styles.tabIconWrap}>
-        <Text style={[styles.tabEmoji, focused && styles.tabEmojiFocused]}>{emoji}</Text>
-        {!!badge && badge > 0 && (
-          <View style={styles.tabBadge}>
-            <Text style={styles.tabBadgeText}>{badge > 9 ? '9+' : badge}</Text>
-          </View>
-        )}
+        <Icon size={21} color={focused ? Colors.textInverse : Colors.textMuted} strokeWidth={2.4} />
       </View>
-      <Text style={[styles.tabLabel, focused && styles.tabLabelFocused]}>{label}</Text>
+      {focused && <Text style={styles.tabLabelFocused}>{label}</Text>}
     </View>
   );
 }
 
-// Back button header component
-function BackHeader({ title }: { title: string }) {
-  const navigation = useNavigation<NativeStackNavigationProp<FarmerStackParams>>();
-  return (
-    <View style={styles.header}>
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={styles.backBtn}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Text style={styles.backArrow}>←</Text>
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>{title}</Text>
-      <View style={styles.headerRight} />
-    </View>
-  );
+function renderHomeTabIcon({ focused }: { focused: boolean }) {
+  return <TabIcon Icon={Home} label="Home" focused={focused} />;
 }
 
-// Bottom tab navigator - the 5 primary tabs
+function renderOrdersTabIcon({ focused }: { focused: boolean }) {
+  return <TabIcon Icon={ClipboardList} label="Orders" focused={focused} />;
+}
+
+function renderPaymentsTabIcon({ focused }: { focused: boolean }) {
+  return <TabIcon Icon={CreditCard} label="Payments" focused={focused} />;
+}
+
+function renderSettingsTabIcon({ focused }: { focused: boolean }) {
+  return <TabIcon Icon={Settings} label="Settings" focused={focused} />;
+}
+
+// Bottom tab navigator - the 4 primary tabs
 function FarmerTabs() {
-  const unreadCount = useAppSelector(selectUnreadCount);
-
   return (
     <Tab.Navigator
       screenOptions={{
@@ -90,45 +82,28 @@ function FarmerTabs() {
         name="FarmerDashboard"
         component={FarmerDashboard}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🏠" label="Home" focused={focused} />
-          ),
+          tabBarIcon: renderHomeTabIcon,
         }}
       />
       <Tab.Screen
         name="MyListings"
         component={MyListings}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="📋" label="Orders" focused={focused} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="PriceCheck"
-        component={PriceCheck}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="📊" label="Prices" focused={focused} />
-          ),
+          tabBarIcon: renderOrdersTabIcon,
         }}
       />
       <Tab.Screen
         name="PaymentHistory"
         component={PaymentHistory}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="💰" label="Payments" focused={focused} />
-          ),
+          tabBarIcon: renderPaymentsTabIcon,
         }}
       />
       <Tab.Screen
-        name="Notifications"
-        component={Notifications}
+        name="Settings"
+        component={FarmerProfile}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🔔" label="Alerts" focused={focused} badge={unreadCount} />
-          ),
+          tabBarIcon: renderSettingsTabIcon,
         }}
       />
     </Tab.Navigator>
@@ -174,6 +149,16 @@ export function FarmerNavigator() {
         options={{ animation: 'slide_from_right' }}
       />
       <Stack.Screen
+        name="PriceCheck"
+        component={PriceCheck}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={Notifications}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
         name="FarmerProfile"
         component={FarmerProfile}
         options={{ animation: 'slide_from_right' }}
@@ -190,59 +175,40 @@ export function FarmerNavigator() {
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: Colors.surface,
-    borderTopWidth: 0.5,
-    borderTopColor: Colors.border,
-    height: 64,
-    paddingBottom: 8,
-    paddingTop: 6,
-    elevation: 8,
+    borderTopWidth: 0,
+    height: 72,
+    paddingBottom: 10,
+    paddingTop: 10,
+    paddingHorizontal: 10,
+    elevation: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
   },
   tabItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    justifyContent: 'center',
+    alignSelf: 'center',
+    gap: 6,
     minWidth: 48,
+    height: 42,
+    paddingHorizontal: 12,
+    borderRadius: 21,
+    backgroundColor: Colors.surfaceAlt,
+  },
+  tabItemFocused: {
+    minWidth: 104,
+    backgroundColor: Colors.greenMid,
   },
   tabIconWrap: {
     position: 'relative',
   },
-  tabEmoji: {
-    fontSize: 22,
-    opacity: 0.45,
-  },
-  tabEmojiFocused: {
-    opacity: 1,
-  },
-  tabLabel: {
-    fontSize: 10,
-    color: Colors.textDisabled,
-    fontWeight: Font.weight.medium,
-  },
   tabLabelFocused: {
-    color: Colors.green,
-    fontWeight: Font.weight.bold,
-  },
-  tabBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -6,
-    backgroundColor: Colors.error,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-    borderWidth: 1.5,
-    borderColor: Colors.surface,
-  },
-  tabBadgeText: {
-    fontSize: 9,
     color: Colors.textInverse,
     fontWeight: Font.weight.bold,
+    fontSize: 12,
   },
   // Header shared by stack screens
   header: {

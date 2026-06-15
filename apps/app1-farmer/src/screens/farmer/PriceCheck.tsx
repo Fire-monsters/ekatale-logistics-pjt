@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors, Font, Layout, Space, getCropEmoji } from '../../../theme';
+import { SafeScreen } from '../../components';
 import { SectionHeader } from '../../components/common';
 import { formatTrend, formatUGX } from '../../utils/currency';
 
@@ -22,53 +23,55 @@ export function PriceCheck() {
   ];
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: Colors.bg }} contentContainerStyle={styles.scroll}>
-      <Text style={styles.title}>Market Prices</Text>
+    <SafeScreen padded={false} backgroundColor={Colors.bg}>
+      <ScrollView style={{ flex: 1, backgroundColor: Colors.bg }} contentContainerStyle={styles.scroll}>
+        <Text style={styles.title}>Market Prices</Text>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {PRICE_CROPS.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[styles.cropPill, crop === item.id && styles.cropPillActive]}
-              onPress={() => setCrop(item.id)}
-            >
-              <Text style={styles.cropEmoji}>{getCropEmoji(item.id)}</Text>
-              <Text style={[styles.cropPillText, crop === item.id && styles.cropPillTextActive]}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {PRICE_CROPS.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.cropPill, crop === item.id && styles.cropPillActive]}
+                onPress={() => setCrop(item.id)}
+              >
+                <Text style={styles.cropEmoji}>{getCropEmoji(item.id)}</Text>
+                <Text style={[styles.cropPillText, crop === item.id && styles.cropPillTextActive]}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+
+        <View style={styles.priceCard}>
+          <Text style={styles.priceLabel}>E-Katale farmgate price today</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+            <Text style={styles.priceVal}>{formatUGX(price.current)}<Text style={styles.priceUnit}>/kg</Text></Text>
+            <View style={[styles.trendBadge, { backgroundColor: Colors.greenLight }]}>
+              <Text style={[styles.trendText, { color: Colors.green }]}>↑ {formatTrend(price.trendPct)}</Text>
+            </View>
+          </View>
         </View>
+
+        <SectionHeader title="Market Comparison" />
+        {markets.map((market) => (
+          <View key={market.name} style={[styles.marketRow, market.vs === 'katale' && styles.marketRowKatale]}>
+            <Text style={styles.marketName}>{market.name}</Text>
+            <View style={{ flex: 1, marginHorizontal: 12 }}>
+              <View
+                style={[
+                  styles.marketBar,
+                  {
+                    width: `${(market.price / 1800) * 100}%`,
+                    backgroundColor: market.vs === 'katale' ? Colors.green : market.vs === 'higher' ? Colors.info : '#E0E0E0',
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.marketPrice}>{formatUGX(market.price)}/kg</Text>
+          </View>
+        ))}
       </ScrollView>
-
-      <View style={styles.priceCard}>
-        <Text style={styles.priceLabel}>E-Katale farmgate price today</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-          <Text style={styles.priceVal}>{formatUGX(price.current)}<Text style={styles.priceUnit}>/kg</Text></Text>
-          <View style={[styles.trendBadge, { backgroundColor: Colors.greenLight }]}>
-            <Text style={[styles.trendText, { color: Colors.green }]}>↑ {formatTrend(price.trendPct)}</Text>
-          </View>
-        </View>
-      </View>
-
-      <SectionHeader title="Market Comparison" />
-      {markets.map((market) => (
-        <View key={market.name} style={[styles.marketRow, market.vs === 'katale' && styles.marketRowKatale]}>
-          <Text style={styles.marketName}>{market.name}</Text>
-          <View style={{ flex: 1, marginHorizontal: 12 }}>
-            <View
-              style={[
-                styles.marketBar,
-                {
-                  width: `${(market.price / 1800) * 100}%`,
-                  backgroundColor: market.vs === 'katale' ? Colors.green : market.vs === 'higher' ? Colors.info : '#E0E0E0',
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.marketPrice}>{formatUGX(market.price)}/kg</Text>
-        </View>
-      ))}
-    </ScrollView>
+    </SafeScreen>
   );
 }
 

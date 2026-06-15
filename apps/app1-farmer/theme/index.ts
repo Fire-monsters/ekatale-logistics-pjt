@@ -96,6 +96,7 @@ export const Space = {
 // ─────────────────────────────────────────────
 
 export const Font = {
+  family: 'Roboto',
   // Sizes — all ≥ 12px, body ≥ 16px
   size: {
     caption: 12,

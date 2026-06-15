@@ -41,6 +41,7 @@ export type FarmerStackParams = {
   ListingDetail:     { listingId: string };
   PriceCheck:        undefined;
   PaymentHistory:    undefined;
+  Settings:          undefined;
   TransportTracker:  { jobId?: string } | undefined;
   AIAdvisor:         undefined;
   Notifications:     undefined;

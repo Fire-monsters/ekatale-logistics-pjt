@@ -4,18 +4,17 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, Image, Alert, ActivityIndicator,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import type { RouteProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import type { FarmerStackParams } from '../../navigation/RootNavigator';
 import { Colors, Font, Space, Layout, getCropEmoji } from '../../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectActiveDraft, updateDraft, submitListing, clearDraft } from '../../store/slices/listingSlice';
+import { SafeScreen } from '../../components';
 import { requestCameraPermission, requestGalleryPermission } from '../../utils/permissions';
 
 type Nav = NativeStackNavigationProp<FarmerStackParams>;
-type Route = RouteProp<FarmerStackParams, 'ListProducePhotos'>;
 
 interface AIResult {
   score: number;
@@ -46,7 +45,6 @@ function gradeResult(score: number, diseaseFlag: boolean): AIResult {
 
 export default function ListProducePhotos() {
   const navigation = useNavigation<Nav>();
-  const route = useRoute<Route>();
   const dispatch = useAppDispatch();
   const draft = useAppSelector(selectActiveDraft);
 
@@ -91,7 +89,7 @@ export default function ListProducePhotos() {
     setSubmitting(true);
     try {
       dispatch(updateDraft({ photos }));
-      const result = await dispatch(
+      await dispatch(
         submitListing({
           ...(draft as any),
           photos,
@@ -116,11 +114,12 @@ export default function ListProducePhotos() {
   const cropEmoji = draft?.commodityId ? getCropEmoji(draft.commodityId) : '🌾';
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: Colors.surface }}
-      contentContainerStyle={s.scroll}
-      showsVerticalScrollIndicator={false}
-    >
+    <SafeScreen padded={false} backgroundColor={Colors.surface}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: Colors.surface }}
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Header */}
       <TouchableOpacity style={s.back} onPress={() => navigation.goBack()}>
         <Text style={s.backText}>← Back</Text>
@@ -251,7 +250,8 @@ export default function ListProducePhotos() {
       <Text style={s.skipNote}>
         Warehouse will verify grade and confirm final price on arrival.
       </Text>
-    </ScrollView>
+      </ScrollView>
+    </SafeScreen>
   );
 }
 

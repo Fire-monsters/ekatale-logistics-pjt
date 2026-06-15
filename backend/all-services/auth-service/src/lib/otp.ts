@@ -27,19 +27,25 @@ export const sendOtpSms = async (
 
   const message = messages[purpose] || `Your E-Katale code is ${code}.`
 
-  const hasAtCredentials = !!process.env.AT_API_KEY && !!process.env.AT_USERNAME
+  const atApiKey = process.env.AT_API_KEY?.trim()
+  const atUsername = process.env.AT_USERNAME?.trim()
+  const atEnvironment = process.env.AT_ENVIRONMENT?.trim().toLowerCase()
+  const isSandbox = atUsername === 'sandbox' || atEnvironment === 'sandbox'
+  const senderId = isSandbox ? undefined : process.env.AT_SENDER_ID?.trim()
+
+  const hasAtCredentials = !!atApiKey && !!atUsername
 
   if (hasAtCredentials) {
     try {
       const AfricasTalking = require('africastalking')
       const at = AfricasTalking({
-        apiKey:   process.env.AT_API_KEY!,
-        username: process.env.AT_USERNAME!,
+        apiKey:   atApiKey,
+        username: atUsername,
       })
       const result = await at.SMS.send({
         to: [phone],
         message,
-        from: process.env.AT_SENDER_ID || undefined,
+        from: senderId || undefined,
       })
       console.log(`\n📱 OTP SMS sent to ${phone} via Africa's Talking:`, JSON.stringify(result))
     } catch (err) {
