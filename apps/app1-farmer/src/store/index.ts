@@ -5,7 +5,7 @@ import offlineQueueReducer from './slices/offlineQueueSlice';
 import authReducer from './slices/authSlice';
 import listingReducer from './slices/listingSlice';
 import priceReducer from './slices/priceSlice';
-import orderReducer from './slices/orderSlice';
+//import orderReducer from '../slices/orderSlice';
 
 export const store = configureStore({
   reducer: {
@@ -15,7 +15,7 @@ export const store = configureStore({
     offlineQueue: offlineQueueReducer,
     listings: listingReducer,
     prices: priceReducer,
-    orders: orderReducer,
+    //orders: orderReducer,
   },
 });
 

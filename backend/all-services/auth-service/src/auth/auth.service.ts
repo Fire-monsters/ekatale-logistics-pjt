@@ -166,6 +166,7 @@ export class AuthService {
         phone:        true,
         passwordHash: true,
         isActive:     true,
+        role:         true,
       },
     })
     if (!user) throw new Error('USER_NOT_FOUND')
