@@ -6,6 +6,7 @@ import {
   ClipboardList,
   CreditCard,
   Home,
+  PresentationIcon,
   Settings,
 } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -27,23 +28,40 @@ import { Notifications } from '../Notifications';
 import FarmerProfile from './FarmerProfile';
 import ListingDetail from './ListingDetail';
 import { TransportTracker } from '../TransportTracker';
+import { PersonStanding, User } from 'lucide-react-native/icons';
 
 // ─── Tab navigator ────────────────────────────────────────────────────────────
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<FarmerStackParams>();
 
-// Custom tab bar item: inactive icons only, active tab gets the label.
+// Each tab gets its own accent colour when active, instead of one uniform
+// green pill for every tab.
+const TAB_ACCENTS = {
+  home: Colors.green,
+  orders: Colors.info,
+  payments: '#B45309',
+  settings: '#37474F',
+} as const;
+
+// Custom tab bar item: inactive = icon only, active = coloured pill + label.
 function TabIcon({
   Icon,
   label,
   focused,
+  accentColor,
 }: {
   Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
   label: string;
   focused: boolean;
+  accentColor: string;
 }) {
   return (
-    <View style={[styles.tabItem, focused && styles.tabItemFocused]}>
+    <View
+      style={[
+        styles.tabItem,
+        focused && { backgroundColor: accentColor, minWidth: 104 },
+      ]}
+    >
       <View style={styles.tabIconWrap}>
         <Icon size={21} color={focused ? Colors.textInverse : Colors.textMuted} strokeWidth={2.4} />
       </View>
@@ -53,19 +71,19 @@ function TabIcon({
 }
 
 function renderHomeTabIcon({ focused }: { focused: boolean }) {
-  return <TabIcon Icon={Home} label="Home" focused={focused} />;
+  return <TabIcon Icon={Home} label="Home" focused={focused} accentColor={TAB_ACCENTS.home} />;
 }
 
 function renderOrdersTabIcon({ focused }: { focused: boolean }) {
-  return <TabIcon Icon={ClipboardList} label="Orders" focused={focused} />;
+  return <TabIcon Icon={ClipboardList} label="Orders" focused={focused} accentColor={TAB_ACCENTS.orders} />;
 }
 
 function renderPaymentsTabIcon({ focused }: { focused: boolean }) {
-  return <TabIcon Icon={CreditCard} label="Payments" focused={focused} />;
+  return <TabIcon Icon={CreditCard} label="Payments" focused={focused} accentColor={TAB_ACCENTS.payments} />;
 }
 
 function renderSettingsTabIcon({ focused }: { focused: boolean }) {
-  return <TabIcon Icon={Settings} label="Settings" focused={focused} />;
+  return <TabIcon Icon={User} label="Profile" focused={focused} accentColor={TAB_ACCENTS.settings} />;
 }
 
 // Bottom tab navigator - the 4 primary tabs
@@ -81,30 +99,22 @@ function FarmerTabs() {
       <Tab.Screen
         name="FarmerDashboard"
         component={FarmerDashboard}
-        options={{
-          tabBarIcon: renderHomeTabIcon,
-        }}
+        options={{ tabBarIcon: renderHomeTabIcon }}
       />
       <Tab.Screen
         name="MyListings"
         component={MyListings}
-        options={{
-          tabBarIcon: renderOrdersTabIcon,
-        }}
+        options={{ tabBarIcon: renderOrdersTabIcon }}
       />
       <Tab.Screen
         name="PaymentHistory"
         component={PaymentHistory}
-        options={{
-          tabBarIcon: renderPaymentsTabIcon,
-        }}
+        options={{ tabBarIcon: renderPaymentsTabIcon }}
       />
       <Tab.Screen
         name="Settings"
         component={FarmerProfile}
-        options={{
-          tabBarIcon: renderSettingsTabIcon,
-        }}
+        options={{ tabBarIcon: renderSettingsTabIcon }}
       />
     </Tab.Navigator>
   );
@@ -124,10 +134,8 @@ export function FarmerNavigator() {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {/* Tab shell */}
       <Stack.Screen name="Dashboard" component={FarmerTabs} />
 
-      {/* Full-screen stacked screens */}
       <Stack.Screen
         name="ListProduce"
         component={ListProduce}
@@ -198,10 +206,6 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     backgroundColor: Colors.surfaceAlt,
   },
-  tabItemFocused: {
-    minWidth: 104,
-    backgroundColor: Colors.greenMid,
-  },
   tabIconWrap: {
     position: 'relative',
   },
@@ -210,7 +214,6 @@ const styles = StyleSheet.create({
     fontWeight: Font.weight.bold,
     fontSize: 12,
   },
-  // Header shared by stack screens
   header: {
     height: 56,
     backgroundColor: Colors.surface,

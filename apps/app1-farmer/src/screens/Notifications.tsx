@@ -2,6 +2,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GS, Colors, Font, Space } from '@styles/global';
+import { SafeScreen } from '../components';
 import { useAppSelector } from '../store/hooks';
 import { selectNotifications } from '../store/slices/notificationSlice';
 
@@ -15,7 +16,7 @@ export function Notifications() {
   useAppSelector(selectNotifications);
 
   return (
-    <View style={GS.screen}>
+    <SafeScreen padded={false} backgroundColor={Colors.bg}>
       <View style={GS.header}>
         <Text style={GS.pageTitle}>Notifications</Text>
         <TouchableOpacity><Text style={GS.linkText}>Mark all read</Text></TouchableOpacity>
@@ -38,13 +39,12 @@ export function Notifications() {
           </View>
         ))}
       </ScrollView>
-    </View>
+    </SafeScreen>
   );
 }
 
 export default Notifications;
 
-// Only screen-specific styles that have no GS equivalent
 const s = StyleSheet.create({
   dayLabel: {
     fontSize: 10,

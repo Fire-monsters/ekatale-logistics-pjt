@@ -1,7 +1,8 @@
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { StatusBadge } from '../components/common';
+import { SafeScreen } from '../components';
 import { GS, Colors } from '@styles/global';
 import { formatUGX } from '../utils/currency';
 
@@ -16,32 +17,34 @@ export function PaymentHistory() {
     .reduce((sum, p) => sum + p.amount, 0);
 
   return (
-    <ScrollView style={GS.screen} contentContainerStyle={GS.scrollContent}>
-      <Text style={GS.pageTitle}>My Payments</Text>
+    <SafeScreen scroll padded={false} backgroundColor={Colors.bg}>
+      <View style={GS.scrollContent}>
+        <Text style={GS.pageTitle}>My Payments</Text>
 
-      <View style={GS.summaryCard}>
-        <Text style={GS.summaryLabel}>Total earned this month</Text>
-        <Text style={GS.summaryValue}>{formatUGX(total)}</Text>
-        <Text style={GS.summarySub}>MTN Mobile Money - Active</Text>
-      </View>
-
-      {payments.map((payment) => (
-        <View key={payment.id} style={GS.listRow}>
-          <View style={{ flex: 1, gap: 3 }}>
-            <Text style={GS.listRowText}>{payment.crop} - {payment.date}</Text>
-            {payment.commission > 0 && (
-              <Text style={GS.listRowSub}>Platform fee: {formatUGX(payment.commission)}</Text>
-            )}
-          </View>
-          <View style={{ alignItems: 'flex-end', gap: 4 }}>
-            <Text style={[s.rowAmount, payment.status !== 'PAID' && { color: Colors.warning }]}>
-              +{formatUGX(payment.amount)}
-            </Text>
-            <StatusBadge status={payment.status} />
-          </View>
+        <View style={GS.summaryCard}>
+          <Text style={GS.summaryLabel}>Total earned this month</Text>
+          <Text style={GS.summaryValue}>{formatUGX(total)}</Text>
+          <Text style={GS.summarySub}>MTN Mobile Money - Active</Text>
         </View>
-      ))}
-    </ScrollView>
+
+        {payments.map((payment) => (
+          <View key={payment.id} style={GS.listRow}>
+            <View style={{ flex: 1, gap: 3 }}>
+              <Text style={GS.listRowText}>{payment.crop} - {payment.date}</Text>
+              {payment.commission > 0 && (
+                <Text style={GS.listRowSub}>Platform fee: {formatUGX(payment.commission)}</Text>
+              )}
+            </View>
+            <View style={{ alignItems: 'flex-end', gap: 4 }}>
+              <Text style={[s.rowAmount, payment.status !== 'PAID' && { color: Colors.warning }]}>
+                +{formatUGX(payment.amount)}
+              </Text>
+              <StatusBadge status={payment.status} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </SafeScreen>
   );
 }
 

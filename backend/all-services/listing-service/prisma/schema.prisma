@@ -1,0 +1,182 @@
+// backend/all-services/listing-service/prisma/schema.prisma
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../node_modules/.prisma/listing-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_LISTINGS_URL")
+  schemas  = ["listings", "notifications", "auth"]
+}
+
+// ── Read-only cross-schema reference ─────────────────────────────────────────
+// We only SELECT from auth.users — never write to it from this service.
+
+model User {
+  userId    String  @id @map("user_id") @db.Uuid
+  phone     String  @map("phone") @db.VarChar(20)
+  fullName  String  @map("full_name") @db.VarChar(255)
+  role      String  @map("role")
+
+  @@map("users")
+  @@schema("auth")
+}
+
+// ── Listings schema ───────────────────────────────────────────────────────────
+
+model Commodity {
+  commodityId  String @id @map("commodity_id") @db.VarChar(50)
+  nameEn       String @map("name_en") @db.VarChar(100)
+  nameLg       String? @map("name_lg") @db.VarChar(100)
+  nameSw       String? @map("name_sw") @db.VarChar(100)
+  category     String @map("category") @db.VarChar(50)
+  unitDefault  String @map("unit_default") @db.VarChar(20)
+  emoji        String? @map("emoji") @db.VarChar(10)
+  isActive     Boolean @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  listings     ProduceListing[]
+  prices       PriceGuidance[]
+
+  @@map("commodities")
+  @@schema("listings")
+}
+
+model ProduceListing {
+  listingId          String   @id @default(dbgenerated("gen_random_uuid()")) @map("listing_id") @db.Uuid
+  farmerId           String   @map("farmer_id") @db.Uuid
+  commodityId        String   @map("commodity_id") @db.VarChar(50)
+  quantity           Decimal  @map("quantity") @db.Decimal(10, 2)
+  unit               String   @default("kg") @map("unit") @db.VarChar(20)
+  grade              String   @default("B") @map("grade") @db.Char(1)
+  askingPricePerUnit Decimal? @map("asking_price_per_unit") @db.Decimal(12, 2)
+  availabilityDate   DateTime? @map("availability_date") @db.Date
+  district           String?  @map("district") @db.VarChar(100)
+  village            String?  @map("village") @db.VarChar(100)
+  gpsLat             Decimal? @map("gps_lat") @db.Decimal(10, 8)
+  gpsLng             Decimal? @map("gps_lng") @db.Decimal(11, 8)
+  qualityDescription String?  @map("quality_description")
+  aiScore            Int?     @map("ai_score")
+  aiDiseaseFlag      Boolean  @default(false) @map("ai_disease_flag")
+  aiReport           Json?    @map("ai_report")
+  status             String   @default("PENDING_REVIEW") @map("status") @db.VarChar(30)
+  rejectionReason    String?  @map("rejection_reason")
+  warehouseNotes     String?  @map("warehouse_notes")
+  finalPricePerUnit  Decimal? @map("final_price_per_unit") @db.Decimal(12, 2)
+  totalAmount        Decimal? @map("total_amount") @db.Decimal(15, 2)
+  commissionAmount   Decimal? @map("commission_amount") @db.Decimal(15, 2)
+  netAmount          Decimal? @map("net_amount") @db.Decimal(15, 2)
+  source             String   @default("app") @map("source") @db.VarChar(20)
+  offlineId          String?  @unique @map("offline_id") @db.VarChar(100)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  expiresAt          DateTime? @map("expires_at")
+
+  commodity Commodity @relation(fields: [commodityId], references: [commodityId])
+  photos    ListingPhoto[]
+  history   ListingStatusHistory[]
+
+  @@map("produce_listings")
+  @@schema("listings")
+}
+
+model ListingPhoto {
+  photoId    String  @id @default(dbgenerated("gen_random_uuid()")) @map("photo_id") @db.Uuid
+  listingId  String  @map("listing_id") @db.Uuid
+  storageKey String  @map("storage_key") @db.VarChar(500)
+  url        String  @map("url") @db.VarChar(1000)
+  isPrimary  Boolean @default(false) @map("is_primary")
+  sortOrder  Int     @default(0) @map("sort_order")
+  fileSizeKb Int?    @map("file_size_kb")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  listing ProduceListing @relation(fields: [listingId], references: [listingId], onDelete: Cascade)
+
+  @@map("listing_photos")
+  @@schema("listings")
+}
+
+model ListingStatusHistory {
+  historyId     String   @id @default(dbgenerated("gen_random_uuid()")) @map("history_id") @db.Uuid
+  listingId     String   @map("listing_id") @db.Uuid
+  fromStatus    String?  @map("from_status") @db.VarChar(30)
+  toStatus      String   @map("to_status") @db.VarChar(30)
+  changedBy     String?  @map("changed_by") @db.Uuid
+  changedByRole String?  @map("changed_by_role") @db.VarChar(30)
+  notes         String?  @map("notes")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  listing ProduceListing @relation(fields: [listingId], references: [listingId], onDelete: Cascade)
+
+  @@map("listing_status_history")
+  @@schema("listings")
+}
+
+model PriceGuidance {
+  priceId      String   @id @default(dbgenerated("gen_random_uuid()")) @map("price_id") @db.Uuid
+  commodityId  String   @map("commodity_id") @db.VarChar(50)
+  regionId     String   @map("region_id") @db.VarChar(100)
+  unit         String   @default("kg") @map("unit") @db.VarChar(20)
+  floorPrice   Decimal  @map("floor_price") @db.Decimal(12, 2)
+  ceilingPrice Decimal  @map("ceiling_price") @db.Decimal(12, 2)
+  currentPrice Decimal  @map("current_price") @db.Decimal(12, 2)
+  trend        String   @default("STABLE") @map("trend") @db.VarChar(10)
+  trendPct     Decimal? @map("trend_pct") @db.Decimal(5, 2)
+  validFrom    DateTime @default(now()) @map("valid_from") @db.Date
+  validTo      DateTime? @map("valid_to") @db.Date
+  source       String?  @default("admin") @map("source") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  commodity Commodity @relation(fields: [commodityId], references: [commodityId])
+
+  @@map("price_guidance")
+  @@schema("listings")
+}
+
+// ── Notifications schema ──────────────────────────────────────────────────────
+
+model Notification {
+  notificationId String   @id @default(dbgenerated("gen_random_uuid()")) @map("notification_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  channel        String   @default("PUSH") @map("channel") @db.VarChar(20)
+  title          String   @map("title") @db.VarChar(255)
+  message        String   @map("message")
+  data           Json?    @map("data")
+  isRead         Boolean  @default(false) @map("is_read")
+  sentAt         DateTime? @map("sent_at")
+  readAt         DateTime? @map("read_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+  @@schema("notifications")
+}
+
+model PushToken {
+  tokenId   String   @id @default(dbgenerated("gen_random_uuid()")) @map("token_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @map("token") @db.VarChar(500)
+  platform  String   @map("platform") @db.VarChar(10)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("push_tokens")
+  @@schema("notifications")
+}
+
+model UssdSession {
+  sessionId String   @id @map("session_id") @db.VarChar(100)
+  phone     String   @map("phone") @db.VarChar(20)
+  state     String   @default("MAIN_MENU") @map("state") @db.VarChar(50)
+  context   Json     @default("{}") @map("context")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  expiresAt DateTime @map("expires_at")
+
+  @@map("ussd_sessions")
+  @@schema("notifications")
+}

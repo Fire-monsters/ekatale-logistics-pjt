@@ -1,8 +1,7 @@
 // apps/app1-farmer/src/screens/auth/RoleSelectScreen.tsx
 import React from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
-  StatusBar, ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,6 +9,7 @@ import type { AuthStackParams } from '../../navigation/RootNavigator';
 import { Colors, Font, Space, Layout } from '../../../theme';
 import { useAppDispatch } from '../../store/hooks';
 import { updateRegistrationDraft } from '../../store/slices/authSlice';
+import { SafeScreen } from '../../components';
 
 type Nav = NativeStackNavigationProp<AuthStackParams>;
 
@@ -70,9 +70,7 @@ export default function RoleSelectScreen() {
   };
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
-
+    <SafeScreen padded={false} backgroundColor={Colors.bg} statusBarStyle="dark-content">
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -127,12 +125,11 @@ export default function RoleSelectScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: Colors.bg },
   header: {
     backgroundColor: Colors.surface,
     paddingHorizontal: Layout.safePadding,
@@ -142,9 +139,18 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
     gap: Space.xs,
   },
-  backBtn:  { alignSelf: 'flex-start', marginBottom: Space.sm },
-  backText: { fontSize: Font.size.body, color: Colors.green, fontWeight: Font.weight.medium },
-  title:    { fontSize: Font.size.heading, fontWeight: Font.weight.bold, color: Colors.textPrimary },
+  backBtn:  {
+    alignSelf: 'flex-start',
+    marginBottom: Space.sm,
+  },
+  backText: {
+    fontSize: Font.size.body,
+    color: Colors.green,
+    fontWeight: Font.weight.medium
+  },
+  title:    {
+    fontSize: Font.size.heading,
+    fontWeight: Font.weight.bold, color: Colors.textPrimary },
   subtitle: { fontSize: Font.size.body, color: Colors.textMuted },
   scroll:   { padding: Layout.safePadding, gap: Space.md, paddingBottom: 48 },
 

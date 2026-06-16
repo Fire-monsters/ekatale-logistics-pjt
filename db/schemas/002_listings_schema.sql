@@ -146,9 +146,9 @@ CREATE UNIQUE INDEX idx_price_commodity_region_date
 
 CREATE INDEX idx_price_commodity ON listings.price_guidance(commodity_id);
 
--- =============================================================================
+
 -- SCHEMA: notifications
--- =============================================================================
+
 CREATE SCHEMA IF NOT EXISTS notifications;
 
 CREATE TABLE notifications.notifications (
@@ -169,6 +169,7 @@ CREATE INDEX idx_notif_user       ON notifications.notifications(user_id, create
 CREATE INDEX idx_notif_unread     ON notifications.notifications(user_id) WHERE is_read = FALSE;
 
 -- Push token registry
+
 CREATE TABLE notifications.push_tokens (
   token_id    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID        NOT NULL,
@@ -183,6 +184,7 @@ CREATE UNIQUE INDEX idx_push_token_value ON notifications.push_tokens(token);
 CREATE INDEX idx_push_token_user  ON notifications.push_tokens(user_id) WHERE is_active = TRUE;
 
 -- USSD sessions (stateful session tracking)
+
 CREATE TABLE notifications.ussd_sessions (
   session_id   VARCHAR(100) PRIMARY KEY,           -- Africa's Talking sessionId
   phone        VARCHAR(20)  NOT NULL,
@@ -195,9 +197,8 @@ CREATE TABLE notifications.ussd_sessions (
 
 CREATE INDEX idx_ussd_phone ON notifications.ussd_sessions(phone);
 
--- =============================================================================
 -- SEED: commodity taxonomy
--- =============================================================================
+
 INSERT INTO listings.commodities (commodity_id, name_en, name_lg, name_sw, category, unit_default, emoji) VALUES
   ('maize',        'Maize',        'Kasooli',    'Mahindi',    'Grains',     'kg',   '🌽'),
   ('beans',        'Beans',        'Bigere',     'Maharagwe',  'Legumes',    'kg',   '🫘'),
@@ -215,9 +216,8 @@ INSERT INTO listings.commodities (commodity_id, name_en, name_lg, name_sw, categ
   ('sunflower',    'Sunflower',    'Sunflower',  'Alizeti',    'Cash Crops', 'kg',   '🌻')
 ON CONFLICT (commodity_id) DO NOTHING;
 
--- =============================================================================
 -- SEED: initial price guidance (national baseline)
--- =============================================================================
+
 INSERT INTO listings.price_guidance (commodity_id, region_id, floor_price, ceiling_price, current_price, trend, trend_pct) VALUES
   ('maize',        'national', 900,  1800, 1500, 'RISING',  5.3),
   ('beans',        'national', 2000, 4000, 2800, 'STABLE',  0.0),

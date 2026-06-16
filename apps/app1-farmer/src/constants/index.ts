@@ -1,7 +1,7 @@
 // apps/app1-farmer/src/constants/index.ts
 import { Platform } from 'react-native';
 
-const LOCAL_IP = '192.168.0.1';
+const LOCAL_IP = '192.168.0.19';
 
 const DEV_API_HOST = Platform.OS === 'android' ? LOCAL_IP : LOCAL_IP;
 

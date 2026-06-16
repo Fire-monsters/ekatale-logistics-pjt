@@ -4,6 +4,7 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, RefreshControl,
 } from 'react-native';
+
 import {
   BarChart3,
   Bell,
@@ -14,13 +15,16 @@ import {
   Globe2,
   Lightbulb,
   Menu,
+  Sprout,
+  Truck,
   Wheat,
 } from 'lucide-react-native';
+
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import type { FarmerStackParams } from '../../navigation/RootNavigator';
-import { GS, Colors, Font, Space, Layout, Shadow, getCropEmoji } from '@styles/global';
+import { GS, Colors, Font, Space, Layout } from '@styles/global';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { selectUserProfile } from '../../store/slices/userSlice';
 import { selectActiveListings, fetchMyListings } from '../../store/slices/listingSlice';
@@ -152,7 +156,7 @@ export default function FarmerDashboard() {
               onPress={() => navigation.navigate('MyListings')}
             />
             <ActionCard
-              Icon={Bot} label="AI Advisor" sublabel="Ask about your crops"
+              Icon={Bot} label="E-Katale Advisor" sublabel="Ask about your crops"
               bg="#F3E5F5" border="#CE93D8" color="#6A1B9A"
               onPress={() => navigation.navigate('AIAdvisor')}
             />
@@ -180,7 +184,7 @@ export default function FarmerDashboard() {
           {/* Empty state */}
           {listings.length === 0 && !isLoading && (
             <View style={GS.emptyState}>
-              <Text style={GS.emptyEmoji}>🌱</Text>
+              <Sprout size={48} color={Colors.green} strokeWidth={1.8} />
               <Text style={GS.emptyTitle}>No listings yet</Text>
               <Text style={GS.emptyText}>
                 List your produce to start receiving offers from the warehouse
@@ -189,7 +193,8 @@ export default function FarmerDashboard() {
                 style={s.emptyBtn}
                 onPress={() => navigation.navigate('ListProduce')}
               >
-                <Text style={s.emptyBtnText}>🌽 List Produce Now</Text>
+                <Wheat size={18} color={Colors.textInverse} strokeWidth={2.2} />
+                <Text style={s.emptyBtnText}>List Produce Now</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -197,7 +202,7 @@ export default function FarmerDashboard() {
           {/* Truck tracking shortcut (if active) */}
           {pendingCount > 0 && (
             <View style={s.truckCard}>
-              <Text style={s.truckEmoji}>🚚</Text>
+              <Truck size={28} color={Colors.warning} strokeWidth={2.2} />
               <View style={{ flex: 1, gap: 3 }}>
                 <Text style={s.truckTitle}>Truck dispatched</Text>
                 <Text style={s.truckSub}>A truck is on the way to collect your produce</Text>
@@ -239,7 +244,7 @@ function ListingRow({ listing, onPress }: { listing: ProduceListing; onPress: ()
   return (
     <TouchableOpacity style={GS.listRow} onPress={onPress} activeOpacity={0.75}>
       <View style={GS.iconCircleMd}>
-        <Text style={{ fontSize: 22 }}>{getCropEmoji(listing.commodityId)}</Text>
+        <Wheat size={22} color={Colors.green} strokeWidth={2.2} />
       </View>
       <View style={{ flex: 1, gap: 3 }}>
         <Text style={GS.listRowText}>{listing.commodityName} — {listing.quantity}{listing.unit}</Text>
@@ -253,17 +258,29 @@ function ListingRow({ listing, onPress }: { listing: ProduceListing; onPress: ()
 const s = StyleSheet.create({
   // Header
   header: {
-    backgroundColor: Colors.bg,
-    paddingHorizontal: Space.md, paddingBottom: Space.md, paddingTop: Space.sm, gap: 12 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    paddingHorizontal: Space.md,
+    paddingBottom: Space.md,
+    paddingTop: Space.sm,
+    gap: 12
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
   headerTitle: { fontSize: 16, fontWeight: Font.weight.bold, color: Colors.textPrimary },
   bellWrap: { position: 'relative' },
   greeting: { fontSize: Font.size.body, fontWeight: Font.weight.semiBold, color: Colors.textSecondary },
   weatherStrip: {
-    backgroundColor: Colors.greenMid, borderRadius: Layout.radius.md,
+    backgroundColor: '#4C8B6E',
+    borderRadius: Layout.radius.md,
     paddingHorizontal: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     minHeight: 92, gap: 12,
-    ...Shadow.md,
+    shadowColor: '#1B5E20',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.20,
+    shadowRadius: 16,
+    elevation: 8,
   },
   weatherIcon: {
     width: 48,
@@ -320,8 +337,9 @@ const s = StyleSheet.create({
   actionLabel: { fontSize: 14, fontWeight: Font.weight.bold, textAlign: 'center' },
   actionSub: { fontSize: Font.size.caption, color: Colors.textMuted, textAlign: 'center' },
 
-  // Empty state CTA button (text + container handled by GS.emptyState/emptyTitle/emptyText)
+  // Empty state CTA button
   emptyBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: Colors.green, borderRadius: Layout.radius.md,
     paddingVertical: 14, paddingHorizontal: 28, marginTop: 8,
   },
@@ -333,7 +351,6 @@ const s = StyleSheet.create({
     backgroundColor: '#FFF3E0', borderRadius: Layout.radius.lg, padding: 14,
     borderWidth: 1, borderColor: '#FFCC80',
   },
-  truckEmoji: { fontSize: 28 },
   truckTitle: { fontSize: Font.size.label, fontWeight: Font.weight.bold, color: Colors.warning },
   truckSub: { fontSize: Font.size.caption, color: '#8D4E00' },
   trackBtn: { backgroundColor: Colors.warning, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
