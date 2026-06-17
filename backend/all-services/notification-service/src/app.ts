@@ -1,6 +1,6 @@
 // backend/all-services/notification-service/src/app.ts
 import express from 'express'
-import notificationRoutes from '../notifications/notification.routes'
+import notificationRoutes from './notifications/notification.routes'
 
 const app = express()
 

@@ -7,6 +7,7 @@
 
 import * as SQLite from 'expo-sqlite';
 import { DB_TABLES } from '@constants/index';
+import type { ProduceListing } from '../types';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -22,10 +23,11 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
     PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
 
-    -- Pending listings (drafts created offline)
+    -- Pending listings (created offline, not yet synced to listing-service)
     CREATE TABLE IF NOT EXISTS ${DB_TABLES.PENDING_LISTINGS} (
       id TEXT PRIMARY KEY,
       data TEXT NOT NULL,
+      photo_uris TEXT,
       created_at TEXT NOT NULL,
       synced INTEGER DEFAULT 0
     );
@@ -37,7 +39,7 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       updated_at TEXT NOT NULL
     );
 
-    -- Cached orders (for offline viewing)
+    -- Cached orders / listings (for offline viewing)
     CREATE TABLE IF NOT EXISTS ${DB_TABLES.CACHED_ORDERS} (
       id TEXT PRIMARY KEY,
       data TEXT NOT NULL,
@@ -62,6 +64,53 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       last_error TEXT
     );
   `);
+}
+
+// ─────────────────────────────────────────────
+// PENDING LISTINGS (offline-created, not yet synced)
+// ─────────────────────────────────────────────
+
+/**
+ * Saves a listing draft created while offline, along with the local photo
+ * URIs (still on-device, not yet uploaded). The listing is shown in
+ * MyListings immediately with `pendingSync: true` and a "queued" badge.
+ */
+export async function savePendingListing(
+  offlineId: string,
+  listing: Partial<ProduceListing>,
+  photoUris: string[],
+): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    `INSERT OR REPLACE INTO ${DB_TABLES.PENDING_LISTINGS} (id, data, photo_uris, created_at, synced)
+     VALUES (?, ?, ?, ?, 0)`,
+    [offlineId, JSON.stringify(listing), JSON.stringify(photoUris), new Date().toISOString()],
+  );
+}
+
+export async function getPendingListings(): Promise<
+  { offlineId: string; listing: Partial<ProduceListing>; photoUris: string[]; createdAt: string }[]
+> {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<{ id: string; data: string; photo_uris: string; created_at: string }>(
+    `SELECT * FROM ${DB_TABLES.PENDING_LISTINGS} WHERE synced = 0 ORDER BY created_at ASC`,
+  );
+  return rows.map((r) => ({
+    offlineId: r.id,
+    listing: JSON.parse(r.data),
+    photoUris: r.photo_uris ? JSON.parse(r.photo_uris) : [],
+    createdAt: r.created_at,
+  }));
+}
+
+export async function markPendingListingSynced(offlineId: string): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(`UPDATE ${DB_TABLES.PENDING_LISTINGS} SET synced = 1 WHERE id = ?`, [offlineId]);
+}
+
+export async function removePendingListing(offlineId: string): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(`DELETE FROM ${DB_TABLES.PENDING_LISTINGS} WHERE id = ?`, [offlineId]);
 }
 
 // ─────────────────────────────────────────────
@@ -90,7 +139,7 @@ export async function getCachedPrices(): Promise<unknown[]> {
 }
 
 // ─────────────────────────────────────────────
-// CACHED ORDERS
+// CACHED ORDERS / LISTINGS
 // ─────────────────────────────────────────────
 
 export async function saveCachedOrders(orders: unknown[]): Promise<void> {

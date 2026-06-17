@@ -51,29 +51,75 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
-export interface Listing {
+// ─────────────────────────────────────────────
+// COMMODITIES (taxonomy from listing-service)
+// ─────────────────────────────────────────────
+
+export interface Commodity {
+  commodityId: string;
+  nameEn: string;
+  nameLg?: string | null;
+  nameSw?: string | null;
+  category: string;
+  unitDefault: ProduceUnit;
+  emoji?: string | null;
+}
+
+// ─────────────────────────────────────────────
+// LISTINGS
+// ─────────────────────────────────────────────
+
+export interface ListingPhoto {
   id: string;
-  farmerId: string;
-  cropId: string;
-  quantityKg: number;
-  pricePerKg: number;
-  status: ListingStatus;
+  url: string;
+  isPrimary: boolean;
+}
+
+export interface ListingStatusHistoryEntry {
+  fromStatus: ListingStatus | null;
+  toStatus: ListingStatus;
+  notes?: string | null;
   createdAt: string;
 }
 
+/**
+ * App-side shape of a produce listing.
+ * The listing-service returns a richer/differently-keyed object
+ * (listingId, commodity: {...}, photos: [{url,...}]) — `mapListingResponse`
+ * in services/api/listing.api.ts normalises it to this shape so existing
+ * screens (MyListings, ListingDetail, FarmerDashboard) don't need to change.
+ */
 export interface ProduceListing {
   id: string;
   farmerId?: string;
   commodityId: string;
   commodityName: string;
+  commodityEmoji?: string;
   quantity: number;
   unit: ProduceUnit;
   grade: ProduceGrade;
   status: ListingStatus;
   availabilityDate?: string;
   askingPricePerUnit?: number;
+  district?: string;
+  village?: string;
+  gpsLat?: number;
+  gpsLng?: number;
   photos?: string[];
   qualityDescription?: string;
+  aiScore?: number;
+  aiDiseaseFlag?: boolean;
+  aiReport?: Record<string, unknown> | null;
+  rejectionReason?: string | null;
+  warehouseNotes?: string | null;
+  finalPricePerUnit?: number;
+  totalAmount?: number;
+  commissionAmount?: number;
+  netAmount?: number;
+  statusHistory?: ListingStatusHistoryEntry[];
+  source?: 'app' | 'ussd' | 'agent';
+  /** Set when this listing was created offline and not yet synced */
+  pendingSync?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -107,12 +153,26 @@ export type PaymentStatus = 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED';
 export interface PriceGuidance {
   commodityId: string;
   commodityName?: string;
+  commodityEmoji?: string;
+  unit?: ProduceUnit;
   regionId: string;
   currentPrice: number;
   floorPrice?: number;
   ceilingPrice?: number;
   trend?: 'RISING' | 'FALLING' | 'STABLE';
   trendPct?: number;
+}
+
+export interface PriceForecastPoint {
+  date: string;
+  price: number;
+}
+
+export interface PriceForecast {
+  commodityId: string;
+  regionId: string;
+  currentPrice: number;
+  forecast14d: PriceForecastPoint[];
 }
 
 export interface Payment {
@@ -131,16 +191,36 @@ export interface TransportJob {
   driverId?: string;
 }
 
+// ─────────────────────────────────────────────
+// NOTIFICATIONS (Firestore real-time documents)
+// ─────────────────────────────────────────────
+
+export type NotificationChannel = 'PUSH' | 'SMS' | 'IN_APP';
+
 export interface Notification {
   id: string;
+  userId?: string;
   title: string;
   message?: string;
   body?: string;
+  channels?: NotificationChannel[];
   read?: boolean;
   isRead?: boolean;
   createdAt: string;
   updatedAt?: string;
   data?: Record<string, unknown>;
   channel?: string;
-  userId?: string;
+}
+
+// ─────────────────────────────────────────────
+// OFFLINE SYNC QUEUE
+// ─────────────────────────────────────────────
+
+export type SyncActionType = 'CREATE_LISTING' | 'UPLOAD_PHOTOS' | 'CANCEL_LISTING';
+
+export interface SyncQueueAction {
+  id: string;
+  actionType: SyncActionType;
+  payload: unknown;
+  retryCount: number;
 }

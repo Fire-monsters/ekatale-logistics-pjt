@@ -2,12 +2,27 @@
 import { Platform } from 'react-native';
 
 const LOCAL_IP = '192.168.0.19';
-
 const DEV_API_HOST = Platform.OS === 'android' ? LOCAL_IP : LOCAL_IP;
 
-export const API_BASE_URL = __DEV__
+// ── Per-service base URLs ───────────────────────────────────────────────────
+// Each backend service runs on its own port in dev. In production these would
+// sit behind a single gateway/domain, but keeping them separate now means no
+// rewrite is needed when that gateway is introduced — just change these.
+
+export const AUTH_API_BASE_URL = __DEV__
   ? `http://${DEV_API_HOST}:3001/api`
-  : 'https://api.ekatale.com/v1';
+  : 'https://api.ekatale.com/v1/auth';
+
+export const LISTING_API_BASE_URL = __DEV__
+  ? `http://${DEV_API_HOST}:3002/api`
+  : 'https://api.ekatale.com/v1/listings';
+
+export const NOTIFICATION_API_BASE_URL = __DEV__
+  ? `http://${DEV_API_HOST}:3003/api`
+  : 'https://api.ekatale.com/v1/notifications';
+
+/** @deprecated use AUTH_API_BASE_URL — kept so existing imports don't break */
+export const API_BASE_URL = AUTH_API_BASE_URL;
 
 export const API_ROUTES = {
   AUTH_REQUEST_OTP:   '/auth/otp/request',
@@ -23,6 +38,9 @@ export const API_ROUTES = {
   FARMER_LISTINGS:         '/farmer/listings',
   FARMER_LISTING_CREATE:   '/farmer/listings',
   FARMER_LISTING_BY_ID:    (id: string) => `/farmer/listings/${id}`,
+  FARMER_LISTING_PHOTOS:   (id: string) => `/farmer/listings/${id}/photos`,
+  FARMER_LISTING_DELETE:   (id: string) => `/farmer/listings/${id}`,
+  LISTING_STATUS:          (id: string) => `/listings/${id}/status`,
   FARMER_AI_DIAGNOSE:      '/farmer/listings/diagnose',
 
   // Field-agent endpoints
@@ -31,22 +49,33 @@ export const API_ROUTES = {
   AGENT_FARMER_CREATE:     '/agents/me/farmers',
   AGENT_EARNINGS:          '/agents/me/earnings',
 
+  // Listing-service: prices & taxonomy
   PRICE_CHECK:             '/prices',
   PRICE_FORECAST:          '/prices/forecast',
+  COMMODITIES:             '/commodities',
+
   PAYMENT_HISTORY:         '/payments',
   WALLET_BALANCE:          '/wallet',
   TRANSPORT_JOBS:          '/transport/jobs',
   TRANSPORT_JOB_BY_ID:     (id: string) => `/transport/jobs/${id}`,
   DRIVER_LOCATION:         (id: string) => `/transport/jobs/${id}/driver-location`,
+
+  // Notification-service
   NOTIFICATIONS:                '/notifications',
+  NOTIFICATIONS_READ_ALL:       '/notifications/read-all',
   NOTIFICATION_MARK_READ:       (id: string) => `/notifications/${id}/read`,
   PUSH_TOKEN_REGISTER:          '/notifications/push-token',
+
   AI_CHAT:                      '/ai/chat',
   AI_CHAT_HISTORY:              '/ai/chat/history',
 } as const;
 
 export const BUSINESS_RULES = {
   PRICE_REFRESH_INTERVAL_MS: 5 * 60 * 1000,
+  /** How often the offline sync engine retries the pending queue */
+  SYNC_RETRY_INTERVAL_MS: 30 * 1000,
+  /** Max retries before a queued action is dropped (and flagged for the user) */
+  SYNC_MAX_RETRIES: 5,
 } as const;
 
 export const DB_TABLES = {
@@ -55,6 +84,13 @@ export const DB_TABLES = {
   CACHED_ORDERS:    'cached_orders',
   CHAT_HISTORY:     'chat_history',
   SYNC_QUEUE:       'sync_queue',
+} as const;
+
+/** Action types recognised by the offline sync engine (services/sync/offlineSync.ts) */
+export const SYNC_ACTION_TYPES = {
+  CREATE_LISTING:   'CREATE_LISTING',
+  UPLOAD_PHOTOS:    'UPLOAD_PHOTOS',
+  CANCEL_LISTING:   'CANCEL_LISTING',
 } as const;
 
 export const SUPPORTED_LANGUAGES = ['en', 'lg', 'sw', 'rn'] as const;

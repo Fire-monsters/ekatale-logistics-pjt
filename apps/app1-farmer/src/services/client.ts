@@ -1,71 +1,31 @@
-import { API_BASE_URL } from '../constants';
+// apps/app1-farmer/src/services/client.ts
+import { AUTH_API_BASE_URL } from '../constants';
+import { get as _get, post as _post, patch as _patch, del as _del, apiRequest, ApiError } from './api/httpClient';
 
-type ApiEnvelope<T> =
-  | { success: true; data: T }
-  | { success: false; error?: string; message?: string };
+export { ApiError };
 
-function isApiEnvelope<T>(payload: unknown): payload is ApiEnvelope<T> {
-  return (
-    !!payload &&
-    typeof payload === 'object' &&
-    'success' in payload &&
-    typeof (payload as { success?: unknown }).success === 'boolean'
-  );
-}
-
-export async function apiFetch<T>(
-  endpoint: string,
-  options: RequestInit = {},
-  token?: string,
-): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers as Record<string, string> ?? {}),
-  };
-
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  const payload = await res.json().catch(() => undefined);
-
-  if (!res.ok) {
-    const err = payload as { error?: string; message?: string } | undefined;
-    throw new Error(err?.error ?? err?.message ?? `HTTP ${res.status}`);
-  }
-
-  if (isApiEnvelope<T>(payload)) {
-    if (!payload.success) {
-      throw new Error(payload.error ?? payload.message ?? 'REQUEST_FAILED');
-    }
-    return payload.data;
-  }
-
-  return payload as T;
+/**
+ * @deprecated Thin wrappers kept so existing imports (authSlice, agent.ts)
+ * keep working unchanged. New code should call the per-service clients in
+ * services/api/* directly (listing.api.ts, price.api.ts, notification.api.ts)
+ * which target listing-service / notification-service instead of auth-service.
+ */
+export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  return apiRequest<T>(AUTH_API_BASE_URL, endpoint, options);
 }
 
 export function get<T>(endpoint: string, options?: RequestInit) {
-  return apiFetch<T>(endpoint, { ...options, method: options?.method ?? 'GET' });
+  return _get<T>(AUTH_API_BASE_URL, endpoint, options);
 }
 
 export function post<T>(endpoint: string, body?: unknown, options?: RequestInit) {
-  return apiFetch<T>(endpoint, {
-    ...options,
-    method: 'POST',
-    body: body instanceof FormData ? body : JSON.stringify(body ?? {}),
-  });
+  return _post<T>(AUTH_API_BASE_URL, endpoint, body, options);
 }
 
 export function patch<T>(endpoint: string, body?: unknown, options?: RequestInit) {
-  return apiFetch<T>(endpoint, {
-    ...options,
-    method: 'PATCH',
-    body: JSON.stringify(body ?? {}),
-  });
+  return _patch<T>(AUTH_API_BASE_URL, endpoint, body, options);
 }
 
 export function del<T>(endpoint: string, options?: RequestInit) {
-  return apiFetch<T>(endpoint, { ...options, method: 'DELETE' });
+  return _del<T>(AUTH_API_BASE_URL, endpoint, options);
 }

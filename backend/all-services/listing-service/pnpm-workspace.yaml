@@ -1,0 +1,6 @@
+allowBuilds:
+  '@firebase/util': true
+  '@prisma/client': false
+  '@prisma/engines': false
+  prisma: false
+  protobufjs: false

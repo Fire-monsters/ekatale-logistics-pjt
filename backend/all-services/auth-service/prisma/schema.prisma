@@ -14,7 +14,6 @@ datasource db {
 model User {
   userId       String    @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
   phone        String    @unique @db.VarChar(20)
-  email        String?   @unique @db.VarChar(255)
   passwordHash String    @map("password_hash") @db.VarChar(255)
   role         Role
   fullName     String    @map("full_name") @db.VarChar(255)

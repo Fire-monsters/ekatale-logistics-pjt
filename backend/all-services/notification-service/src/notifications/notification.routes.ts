@@ -1,7 +1,7 @@
 // backend/all-services/notification-service/src/notifications/notification.routes.ts
 import { Router } from 'express'
 import { notificationController } from './notification.controller'
-import { authenticate, authenticateService } from '../src/middleware/auth.middleware'
+import { authenticate, authenticateService } from '../middleware/auth.middleware'
 
 const router = Router()
 

@@ -4,17 +4,20 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, Image, Alert, ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import type { FarmerStackParams } from '../../navigation/RootNavigator';
 import { Colors, Font, Space, Layout, getCropEmoji } from '../../../theme';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { selectActiveDraft, updateDraft, submitListing, clearDraft } from '../../store/slices/listingSlice';
-import { SafeScreen } from '../../components';
+import { selectActiveDraft, updateDraft, submitListing } from '../../store/slices/listingSlice';
+import { selectIsOnline } from '../../store/slices/offlineQueueSlice';
 import { requestCameraPermission, requestGalleryPermission } from '../../utils/permissions';
+import type { CreateListingPayload } from '../../services/api/listing.api';
 
 type Nav = NativeStackNavigationProp<FarmerStackParams>;
+type Route = RouteProp<FarmerStackParams, 'ListProducePhotos'>;
 
 interface AIResult {
   score: number;
@@ -45,8 +48,10 @@ function gradeResult(score: number, diseaseFlag: boolean): AIResult {
 
 export default function ListProducePhotos() {
   const navigation = useNavigation<Nav>();
+  const route = useRoute<Route>();
   const dispatch = useAppDispatch();
   const draft = useAppSelector(selectActiveDraft);
+  const isOnline = useAppSelector(selectIsOnline);
 
   const [photos, setPhotos] = useState<string[]>([]);
   const [analysing, setAnalysing] = useState(false);
@@ -86,24 +91,42 @@ export default function ListProducePhotos() {
       Alert.alert('Add Photos', 'Please add at least one photo of your produce.');
       return;
     }
+    if (!draft?.commodityId || !draft.quantity || !draft.unit || !draft.grade) {
+      Alert.alert('Missing details', 'Please go back and complete the listing details.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      dispatch(updateDraft({ photos }));
-      await dispatch(
-        submitListing({
-          ...(draft as any),
-          photos,
-          farmerId: '',
-          status: 'PENDING_REVIEW',
-          createdAt: new Date().toISOString(),
-        }),
-      ).unwrap();
-      dispatch(clearDraft());
-      Alert.alert(
-        '✅ Listing Submitted!',
-        'Your produce has been listed. You\'ll be notified when a buyer responds.',
-        [{ text: 'View My Listings', onPress: () => navigation.navigate('MyListings') }],
-      );
+      const payload: CreateListingPayload = {
+        commodityId: draft.commodityId,
+        commodityName: draft.commodityName,
+        quantity: draft.quantity,
+        unit: draft.unit,
+        grade: draft.grade,
+        availabilityDate: draft.availabilityDate,
+        askingPricePerUnit: draft.askingPricePerUnit,
+        qualityDescription: aiResult ? aiResult.label : undefined,
+        aiScore: aiResult?.score,
+        aiDiseaseFlag: aiResult?.diseaseFlag,
+        source: 'app',
+      };
+
+      const result = await dispatch(submitListing({ listing: payload, photoUris: photos })).unwrap();
+
+      if (result.queued) {
+        Alert.alert(
+          '📶 Saved — will submit when online',
+          "You're offline. This listing has been saved on your device and will be sent automatically once you're back online.",
+          [{ text: 'View My Listings', onPress: () => navigation.navigate('MyListings') }],
+        );
+      } else {
+        Alert.alert(
+          '✅ Listing Submitted!',
+          "Your produce has been listed. You'll be notified when a buyer responds.",
+          [{ text: 'View My Listings', onPress: () => navigation.navigate('MyListings') }],
+        );
+      }
     } catch (e: any) {
       Alert.alert('Submission Failed', e.message ?? 'Please try again.');
     } finally {
@@ -114,17 +137,23 @@ export default function ListProducePhotos() {
   const cropEmoji = draft?.commodityId ? getCropEmoji(draft.commodityId) : '🌾';
 
   return (
-    <SafeScreen padded={false} backgroundColor={Colors.surface}>
-      <ScrollView
-        style={{ flex: 1, backgroundColor: Colors.surface }}
-        contentContainerStyle={s.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScrollView
+      style={{ flex: 1, backgroundColor: Colors.surface }}
+      contentContainerStyle={s.scroll}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header */}
       <TouchableOpacity style={s.back} onPress={() => navigation.goBack()}>
         <Text style={s.backText}>← Back</Text>
       </TouchableOpacity>
       <Text style={s.title}>Add Photos & AI Check</Text>
+
+      {/* Offline banner */}
+      {!isOnline && (
+        <View style={s.offlineBanner}>
+          <Text style={s.offlineText}>📶 You're offline — your listing will be saved and sent automatically once you reconnect.</Text>
+        </View>
+      )}
 
       {/* Progress bar */}
       <View style={s.progress}>
@@ -179,8 +208,8 @@ export default function ListProducePhotos() {
         </View>
       </View>
 
-      {/* AI Analysis */}
-      {photos.length > 0 && !aiResult && (
+      {/* AI Analysis — requires connectivity */}
+      {photos.length > 0 && !aiResult && isOnline && (
         <TouchableOpacity
           style={[s.aiBtn, analysing && { opacity: 0.6 }]}
           onPress={runAI}
@@ -195,6 +224,11 @@ export default function ListProducePhotos() {
             <Text style={s.aiBtnText}>🤖 Run AI Quality Check</Text>
           )}
         </TouchableOpacity>
+      )}
+      {photos.length > 0 && !aiResult && !isOnline && (
+        <View style={s.aiOfflineNote}>
+          <Text style={s.aiOfflineText}>🤖 AI Quality Check needs an internet connection — you can still submit and it'll run once you're online.</Text>
+        </View>
       )}
 
       {/* AI Result */}
@@ -243,15 +277,14 @@ export default function ListProducePhotos() {
         {submitting ? (
           <ActivityIndicator color={Colors.textInverse} />
         ) : (
-          <Text style={s.nextBtnText}>✅ Submit Listing</Text>
+          <Text style={s.nextBtnText}>{isOnline ? '✅ Submit Listing' : '📶 Save & Queue for Sync'}</Text>
         )}
       </TouchableOpacity>
 
       <Text style={s.skipNote}>
         Warehouse will verify grade and confirm final price on arrival.
       </Text>
-      </ScrollView>
-    </SafeScreen>
+    </ScrollView>
   );
 }
 
@@ -264,84 +297,258 @@ const s = StyleSheet.create({
     gap: Space.lg,
     backgroundColor: Colors.surface,
   },
-  back: { alignSelf: 'flex-start', paddingVertical: Space.sm },
-  backText: { fontSize: Font.size.body, color: Colors.green, fontWeight: Font.weight.medium },
-  title: { fontSize: Font.size.heading, fontWeight: Font.weight.bold, color: Colors.textPrimary },
+
+  back: {
+    alignSelf: 'flex-start',
+    paddingVertical: Space.sm
+  },
+
+  backText: {
+    fontSize: Font.size.body,
+    color: Colors.green,
+    fontWeight: Font.weight.medium
+  },
+
+  title: { 
+    fontSize: Font.size.heading, 
+    fontWeight: Font.weight.bold, 
+    color: Colors.textPrimary 
+  },
+
+  offlineBanner: {
+    backgroundColor: '#FFF3E0', 
+    borderRadius: Layout.radius.md,
+    padding: 12, 
+    borderWidth: 0.5, 
+    borderColor: '#FFCC80',
+  },
+
+  offlineText: { 
+    fontSize: Font.size.caption, 
+    color: '#E65100', 
+    lineHeight: 18 
+  },
 
   progress: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  progressDot: { width: 32, height: 5, borderRadius: 3, backgroundColor: '#E5E7EB' },
+
+  progressDot: { 
+    width: 32, 
+    height: 5, borderRadius: 3, 
+    backgroundColor: '#E5E7EB' 
+  },
+  
   progressDotActive: { backgroundColor: Colors.green },
-  progressText: { fontSize: Font.size.caption, color: Colors.textMuted, marginLeft: 4 },
+
+  progressText: { 
+    fontSize: Font.size.caption, 
+    color: Colors.textMuted, 
+    marginLeft: 4 
+  },
 
   draftStrip: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: Colors.greenLight, borderRadius: Layout.radius.md,
-    padding: 12, borderWidth: 0.5, borderColor: Colors.greenBorder,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 10,
+    backgroundColor: Colors.greenLight, 
+    borderRadius: Layout.radius.md,
+    padding: 12, 
+    borderWidth: 0.5, 
+    borderColor: Colors.greenBorder,
   },
-  draftText: { fontSize: Font.size.body, fontWeight: Font.weight.semiBold, color: Colors.green },
+
+  draftText: { 
+    fontSize: Font.size.body, 
+    fontWeight: Font.weight.semiBold, 
+    color: Colors.green 
+  },
 
   section: { gap: 10 },
-  sectionLabel: { fontSize: Font.size.body, fontWeight: Font.weight.bold, color: Colors.textPrimary },
-  sectionHint: { fontSize: Font.size.caption, color: Colors.textMuted, marginTop: -4 },
+
+  sectionLabel: { 
+    fontSize: Font.size.body, 
+    fontWeight: Font.weight.bold, 
+    color: Colors.textPrimary 
+  },
+  
+  sectionHint: { 
+    fontSize: Font.size.caption, 
+    color: Colors.textMuted, 
+    marginTop: -4 },
 
   photosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+
   photoWrap: {
-    width: PHOTO_SIZE, height: PHOTO_SIZE, borderRadius: Layout.radius.md,
-    overflow: 'hidden', position: 'relative',
+    width: PHOTO_SIZE, 
+    height: PHOTO_SIZE, 
+    borderRadius: Layout.radius.md,
+    overflow: 'hidden', 
+    position: 'relative',
   },
+
   photo: { width: '100%', height: '100%' },
+  
   removeBtn: {
-    position: 'absolute', top: 4, right: 4,
-    width: 22, height: 22, borderRadius: 11,
-    backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center',
+    position: 'absolute', 
+    top: 4, right: 4,
+    width: 22, height: 22, 
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.55)', 
+    alignItems: 'center', 
+    justifyContent: 'center',
   },
-  removeBtnText: { fontSize: 10, color: '#fff', fontWeight: Font.weight.bold },
-  addPhotoWrap: { flexDirection: 'row', gap: 10 },
+
+  removeBtnText: { 
+    fontSize: 10, 
+    color: '#fff', 
+    fontWeight: Font.weight.bold 
+  },
+  
+  addPhotoWrap: { 
+    flexDirection: 'row', 
+    gap: 10 
+  },
+
   addPhotoBtn: {
-    width: PHOTO_SIZE, height: PHOTO_SIZE, borderRadius: Layout.radius.md,
-    borderWidth: 2, borderColor: Colors.greenBorder, borderStyle: 'dashed',
-    alignItems: 'center', justifyContent: 'center', gap: 4,
+    width: PHOTO_SIZE, 
+    height: PHOTO_SIZE, 
+    borderRadius: Layout.radius.md,
+    borderWidth: 2, 
+    borderColor: Colors.greenBorder, 
+    borderStyle: 'dashed',
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 4,
     backgroundColor: Colors.greenLight,
   },
+
   addPhotoIcon: { fontSize: 24 },
-  addPhotoText: { fontSize: 11, color: Colors.green, fontWeight: Font.weight.medium },
+
+  addPhotoText: { 
+    fontSize: 11, 
+    color: Colors.green, 
+    fontWeight: Font.weight.medium 
+  },
 
   aiBtn: {
-    backgroundColor: '#6A1B9A', borderRadius: Layout.radius.md,
-    minHeight: Layout.touch.comfortable, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#6A1B9A', 
+    borderRadius: Layout.radius.md,
+    minHeight: Layout.touch.comfortable, 
+    alignItems: 'center', 
+    justifyContent: 'center',
   },
-  aiBtnText: { fontSize: Font.size.body, fontWeight: Font.weight.bold, color: Colors.textInverse },
-  aiAnalysing: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+
+  aiBtnText: { 
+    fontSize: Font.size.body, 
+    fontWeight: Font.weight.bold, 
+    color: Colors.textInverse 
+  },
+  
+  aiAnalysing: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 10 
+  },
+
+  aiOfflineNote: {
+    backgroundColor: '#F3E5F5',
+    borderRadius: Layout.radius.md,
+    padding: 12,
+    borderWidth: 0.5,
+    borderColor: '#CE93D8',
+  },
+
+  aiOfflineText: { fontSize: Font.size.caption,
+    color: '#6A1B9A',
+    lineHeight: 18
+  },
 
   aiResultCard: {
-    borderRadius: Layout.radius.md, borderWidth: 2,
-    padding: 14, gap: 10, backgroundColor: Colors.surface,
+    borderRadius: Layout.radius.md,
+    borderWidth: 2,
+    padding: 14,
+    gap: 10,
+    backgroundColor: Colors.surface,
   },
-  aiResultHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  aiResultLabel: { fontSize: Font.size.body, fontWeight: Font.weight.bold },
-  aiResultScore: { fontSize: Font.size.caption, color: Colors.textMuted, marginTop: 2 },
+
+  aiResultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12
+  },
+
+  aiResultLabel: {
+    fontSize: Font.size.body,
+    fontWeight: Font.weight.bold
+  },
+
+  aiResultScore: {
+    fontSize: Font.size.caption,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+
   scoreBar: {
-    width: 60, height: 6, backgroundColor: '#E5E7EB',
-    borderRadius: 3, overflow: 'hidden',
+    width: 60, height: 6,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 3,
+    overflow: 'hidden',
   },
+
   scoreBarFill: { height: '100%', borderRadius: 3 },
-  aiResultTip: { fontSize: Font.size.label, color: Colors.textSecondary, lineHeight: 20 },
+
+  aiResultTip: {
+    fontSize: Font.size.label,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+
   retakeBtn: { alignSelf: 'flex-start' },
-  retakeBtnText: { fontSize: Font.size.caption, color: Colors.info, textDecorationLine: 'underline' },
+
+  retakeBtnText: {
+    fontSize: Font.size.caption,
+    color: Colors.info,
+    textDecorationLine: 'underline'
+  },
 
   tipsCard: {
-    backgroundColor: '#FFF9C4', borderRadius: Layout.radius.md,
-    padding: 14, gap: 6, borderWidth: 0.5, borderColor: '#F9A825',
+    backgroundColor: '#FFF9C4',
+    borderRadius: Layout.radius.md,
+    padding: 14, gap: 6,
+    borderWidth: 0.5,
+    borderColor: '#F9A825',
   },
-  tipsTitle: { fontSize: Font.size.label, fontWeight: Font.weight.bold, color: '#795548' },
-  tip: { fontSize: Font.size.caption, color: '#5D4037', lineHeight: 20 },
+
+  tipsTitle: {
+    fontSize: Font.size.label,
+    fontWeight: Font.weight.bold,
+    color: '#795548'
+  },
+
+  tip: {
+    fontSize: Font.size.caption,
+    color: '#5D4037',
+    lineHeight: 20 },
 
   nextBtn: {
-    backgroundColor: Colors.green, borderRadius: Layout.radius.md,
-    minHeight: Layout.touch.comfortable, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.green,
+    borderRadius: Layout.radius.md,
+    minHeight: Layout.touch.comfortable,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  nextBtnDisabled: { opacity: 0.4 },
-  nextBtnText: { fontSize: Font.size.body, fontWeight: Font.weight.bold, color: Colors.textInverse },
 
-  skipNote: { fontSize: Font.size.caption, color: Colors.textMuted, textAlign: 'center', lineHeight: 18 },
-});
+  nextBtnDisabled: {
+    opacity: 0.4 },
+
+  nextBtnText: { fontSize: Font.size.body,
+    fontWeight: Font.weight.bold,
+    color: Colors.textInverse
+  },
+
+  skipNote: { fontSize: Font.size.caption,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18
+  },
+}
+);

@@ -63,7 +63,7 @@ export class ListingService {
       include: { photos: true },
     })
 
-    await prisma.listingStatusHistory.create({
+  await prisma.listingStatusHistory.create({
       data: {
         listingId: listing.listingId,
         fromStatus: null,
@@ -212,7 +212,7 @@ export class ListingService {
     return updated
   }
 
-  /** Sends a push + SMS to the farmer when their listing's status changes */
+/** Sends a push + SMS to the farmer when their listing's status changes */
   private async notifyFarmerOfStatusChange(listing: {
     farmerId: string
     status: string
