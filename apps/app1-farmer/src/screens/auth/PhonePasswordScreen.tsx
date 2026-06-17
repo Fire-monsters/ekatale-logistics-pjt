@@ -21,6 +21,7 @@ import {
   clearError,
   selectRegistrationDraft,
 } from '../../store/slices/authSlice';
+import { useFeedbackDialog } from 'src/providers/FeedbackDialogProvider';
 
 type Nav   = NativeStackNavigationProp<AuthStackParams>;
 type Route = RouteProp<AuthStackParams, 'PhonePassword'>;
@@ -57,6 +58,8 @@ export default function PhonePasswordScreen() {
   const loading  = useAppSelector(selectAuthLoading);
   const apiError = useAppSelector(selectAuthError);
   const draft    = useAppSelector(selectRegistrationDraft);
+
+  const { showSuccess, showError } = useFeedbackDialog();
 
   const isFarmer = role === 'farmer';
   const accentColor = isFarmer ? Colors.green : '#6A1B9A';
@@ -136,10 +139,8 @@ export default function PhonePasswordScreen() {
     const result = await dispatch(sendRegistrationOtp(payload));
 
     if (sendRegistrationOtp.rejected.match(result)) {
-      Alert.alert(
-        'Registration Failed',
-        (result.payload as string) ?? 'Please check your details and try again.',
-      );
+      showError('Registration Failed',
+        (result.payload as string) ?? 'Please check your details and try again.');
       return;
     }
 

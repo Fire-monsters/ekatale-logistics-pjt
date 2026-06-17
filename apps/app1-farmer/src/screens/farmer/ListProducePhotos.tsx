@@ -15,6 +15,7 @@ import { selectActiveDraft, updateDraft, submitListing } from '../../store/slice
 import { selectIsOnline } from '../../store/slices/offlineQueueSlice';
 import { requestCameraPermission, requestGalleryPermission } from '../../utils/permissions';
 import type { CreateListingPayload } from '../../services/api/listing.api';
+import { useFeedbackDialog } from 'src/providers/FeedbackDialogProvider';
 
 type Nav = NativeStackNavigationProp<FarmerStackParams>;
 type Route = RouteProp<FarmerStackParams, 'ListProducePhotos'>;
@@ -57,6 +58,8 @@ export default function ListProducePhotos() {
   const [analysing, setAnalysing] = useState(false);
   const [aiResult, setAiResult] = useState<AIResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const { showSuccess, showError } = useFeedbackDialog();
 
   const addPhoto = async (source: 'camera' | 'gallery') => {
     const perm = source === 'camera'
@@ -114,21 +117,21 @@ export default function ListProducePhotos() {
 
       const result = await dispatch(submitListing({ listing: payload, photoUris: photos })).unwrap();
 
-      if (result.queued) {
-        Alert.alert(
-          '📶 Saved — will submit when online',
-          "You're offline. This listing has been saved on your device and will be sent automatically once you're back online.",
-          [{ text: 'View My Listings', onPress: () => navigation.navigate('MyListings') }],
-        );
-      } else {
-        Alert.alert(
-          '✅ Listing Submitted!',
-          "Your produce has been listed. You'll be notified when a buyer responds.",
-          [{ text: 'View My Listings', onPress: () => navigation.navigate('MyListings') }],
-        );
-      }
+    if (result.queued) {
+  showSuccess(
+        'Saved — will submit when online',
+        "You're offline. This listing has been saved on your device and will be sent automatically once you're back online.",
+        { label: 'View My Listings', onPress: () => navigation.navigate('MyListings') },
+      );
+    } else {
+  showSuccess(
+        'Listing Submitted!',
+        "Your produce has been listed. You'll be notified when a buyer responds.",
+      { label: 'View My Listings', onPress: () => navigation.navigate('MyListings') },
+    );
+  }
     } catch (e: any) {
-      Alert.alert('Submission Failed', e.message ?? 'Please try again.');
+      showError('Submission Failed', e.message ?? 'Please try again.');
     } finally {
       setSubmitting(false);
     }

@@ -12,6 +12,7 @@ import { UserRole } from '../types';
 import { AuthNavigator } from '../screens/auth/AuthNavigator';
 import { FarmerNavigator } from '../screens/farmer/FarmerNavigator';
 import { AgentNavigator } from '../screens/field-agents/AgentNavigator';
+import { FeedbackDialogProvider } from 'src/providers/FeedbackDialogProvider';
 
 // ─── Auth Stack Param Types ────────────────────────────────────────────────────
 // FLOW (details-first):
@@ -83,6 +84,7 @@ export function RootNavigator() {
   if (booting) return <LoadingScreen />;
 
   return (
+    <FeedbackDialogProvider>
     <NavigationContainer>
       <Root.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {isAuthenticated ? (
@@ -96,6 +98,7 @@ export function RootNavigator() {
         )}
       </Root.Navigator>
     </NavigationContainer>
+ </FeedbackDialogProvider>
   );
 }
 

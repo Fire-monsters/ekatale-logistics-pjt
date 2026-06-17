@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 
 import {
+  AlarmCheck,
   BarChart3,
   Bell,
   Bot,
@@ -261,20 +262,38 @@ const s = StyleSheet.create({
     paddingHorizontal: Space.md,
     paddingBottom: Space.md,
     paddingTop: Space.sm,
-    gap: 12
+    gap: 26,
   },
+
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between'
   },
-  headerTitle: { fontSize: 16, fontWeight: Font.weight.bold, color: Colors.textPrimary },
+
+  headerTitle: {
+    fontSize: 18,
+    alignContent: 'flex-end',
+    fontWeight: Font.weight.bold,
+    color: Colors.textPrimary
+  },
+
   bellWrap: { position: 'relative' },
-  greeting: { fontSize: Font.size.body, fontWeight: Font.weight.semiBold, color: Colors.textSecondary },
+
+  greeting: {
+    fontSize: Font.size.body,
+    fontWeight: Font.weight.semiBold,
+    color: Colors.textSecondary
+  },
+
   weatherStrip: {
     backgroundColor: '#4C8B6E',
     borderRadius: Layout.radius.md,
-    paddingHorizontal: 14, paddingVertical: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     minHeight: 92, gap: 12,
     shadowColor: '#1B5E20',
     shadowOffset: { width: 0, height: 8 },
@@ -282,6 +301,7 @@ const s = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
+
   weatherIcon: {
     width: 48,
     height: 48,
@@ -290,11 +310,29 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   weatherCopy: { flex: 1, gap: 3, minWidth: 0 },
-  weatherMain: { fontSize: 24, color: Colors.textInverse, fontWeight: Font.weight.bold },
-  weatherPlace: { fontSize: Font.size.label, color: 'rgba(255,255,255,0.9)', fontWeight: Font.weight.medium },
+
+  weatherMain: {
+    fontSize: 24,
+    color: Colors.textInverse,
+    fontWeight: Font.weight.bold
+  },
+
+  weatherPlace: {
+    fontSize: Font.size.label,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: Font.weight.medium
+  },
+
   weatherTipRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  weatherTip: { fontSize: Font.size.caption, color: 'rgba(255,255,255,0.78)', flexShrink: 1 },
+
+  weatherTip: {
+    fontSize: Font.size.caption,
+    color: 'rgba(255,255,255,0.78)',
+    flexShrink: 1
+  },
+
   rainTag: {
     backgroundColor: 'rgba(249,168,37,0.25)',
     paddingHorizontal: 12,
@@ -304,29 +342,68 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
   },
-  rainText: { fontSize: 13, color: Colors.gold, fontWeight: Font.weight.bold },
+
+  rainText: {
+    fontSize: 13,
+    color: Colors.gold,
+    fontWeight: Font.weight.bold
+  },
 
   // Body
   body: { padding: Space.md, gap: Space.md, paddingBottom: 32 },
 
   // Stats
   stats: { flexDirection: 'row', gap: 10 },
+
   stat: {
-    flex: 1, backgroundColor: Colors.surface, borderRadius: Layout.radius.md,
-    padding: 12, alignItems: 'center', borderWidth: 0.5, borderColor: Colors.border,
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radius.md,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: Colors.border,
   },
-  statGreen: { backgroundColor: Colors.greenLight, borderColor: Colors.greenBorder },
-  statOrange: { backgroundColor: '#FFF3E0', borderColor: '#FFCC80' },
-  statVal: { fontSize: 22, fontWeight: Font.weight.bold, color: Colors.textPrimary },
-  statLbl: { fontSize: Font.size.caption, color: Colors.textMuted, marginTop: 2, textAlign: 'center' },
+
+  statGreen: {
+    backgroundColor: Colors.greenLight,
+    borderColor: Colors.greenBorder
+  },
+
+  statOrange: {
+    backgroundColor: '#FFF3E0',
+    borderColor: '#FFCC80'
+  },
+
+  statVal: {
+    fontSize: 22,
+    fontWeight: Font.weight.bold,
+    color: Colors.textPrimary
+},
+  statLbl: {
+    fontSize: Font.size.caption,
+    color: Colors.textMuted,
+    marginTop: 2,
+    textAlign: 'center'
+  },
 
   // Actions
-  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10
+  },
+
   actionCard: {
-    width: '47%', borderRadius: Layout.radius.lg, padding: 16,
-    alignItems: 'center', gap: 5, borderWidth: 1,
+    width: '47%',
+    borderRadius: Layout.radius.lg,
+    padding: 16,
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1,
     minHeight: 90,
   },
+
   actionIcon: {
     width: 44,
     height: 44,
@@ -334,8 +411,18 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionLabel: { fontSize: 14, fontWeight: Font.weight.bold, textAlign: 'center' },
-  actionSub: { fontSize: Font.size.caption, color: Colors.textMuted, textAlign: 'center' },
+
+  actionLabel: {
+    fontSize: 14,
+    fontWeight: Font.weight.bold,
+    textAlign: 'center'
+  },
+
+  actionSub: {
+    fontSize: Font.size.caption,
+    color: Colors.textMuted,
+    textAlign: 'center'
+  },
 
   // Empty state CTA button
   emptyBtn: {
@@ -343,16 +430,45 @@ const s = StyleSheet.create({
     backgroundColor: Colors.green, borderRadius: Layout.radius.md,
     paddingVertical: 14, paddingHorizontal: 28, marginTop: 8,
   },
-  emptyBtnText: { fontSize: Font.size.body, fontWeight: Font.weight.bold, color: Colors.textInverse },
+
+  emptyBtnText: {
+    fontSize: Font.size.body,
+    fontWeight: Font.weight.bold,
+    color: Colors.textInverse
+  },
 
   // Truck card
   truckCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#FFF3E0', borderRadius: Layout.radius.lg, padding: 14,
-    borderWidth: 1, borderColor: '#FFCC80',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFF3E0',
+    borderRadius: Layout.radius.lg,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#FFCC80',
   },
-  truckTitle: { fontSize: Font.size.label, fontWeight: Font.weight.bold, color: Colors.warning },
-  truckSub: { fontSize: Font.size.caption, color: '#8D4E00' },
-  trackBtn: { backgroundColor: Colors.warning, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
-  trackBtnText: { fontSize: 13, fontWeight: Font.weight.bold, color: Colors.textInverse },
+
+  truckTitle: {
+    fontSize: Font.size.label,
+    fontWeight: Font.weight.bold,
+    color: Colors.warning
+},
+  truckSub: {
+    fontSize: Font.size.caption,
+    color: '#8D4E00'
+  },
+
+  trackBtn: {
+    backgroundColor: Colors.warning,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8
+  },
+
+  trackBtnText: {
+    fontSize: 13,
+    fontWeight: Font.weight.bold,
+    color: Colors.textInverse
+  },
 });
