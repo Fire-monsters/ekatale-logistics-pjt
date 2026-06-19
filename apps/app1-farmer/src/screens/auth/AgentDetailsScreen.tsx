@@ -2,6 +2,10 @@
 
 import React, { useState } from 'react';
 
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'react-native';
+import { requestCameraPermission, requestGalleryPermission } from '../../utils/permissions';
+
 import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, TextInput,
@@ -42,6 +46,10 @@ export default function AgentDetailsScreen() {
   const dispatch   = useAppDispatch();
   const draft      = useAppSelector(selectRegistrationDraft);
 
+  const [profilePhotoUri, setProfilePhotoUri] = useState<string>(
+  draft.profilePhotoUri ?? ''
+);
+
   const [fullName,  setFullName]  = useState(draft.fullName ?? '');
   const [district,  setDistrict]  = useState(draft.territoryDistrict ?? '');
   const [villages,  setVillages]  = useState((draft.territoryVillages ?? []).join(', '));
@@ -51,6 +59,7 @@ export default function AgentDetailsScreen() {
     const e: Record<string, string> = {};
     if (!fullName.trim() || fullName.trim().length < 3) e.fullName = 'Enter your full name';
     if (!district)                                       e.district = 'Select your territory district';
+    if (!profilePhotoUri) e.photo = 'Please add a profile photo';
     setErrors(e);
     return Object.keys(e).length === 0;
   };

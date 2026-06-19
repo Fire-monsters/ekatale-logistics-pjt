@@ -3,6 +3,7 @@ import React from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   ViewStyle,
@@ -109,14 +110,31 @@ interface AvatarProps {
   name: string;
   size?: number;
   style?: ViewStyle;
+  uri?: string;   // ← NEW: if provided, renders photo instead of initials
 }
 
-export function Avatar({ name, size = 40, style }: AvatarProps) {
+export function Avatar({ name, size = 40, style, uri }: AvatarProps) {
   const initials = name
     .split(' ')
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('');
+
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={[
+          {
+            width:        size,
+            height:       size,
+            borderRadius: size / 2
+          } as const, //style
+        ]}
+        resizeMode="cover"
+      />
+    );
+  }
 
   return (
     <View
@@ -126,10 +144,13 @@ export function Avatar({ name, size = 40, style }: AvatarProps) {
         style,
       ]}
     >
-      <Text style={[styles.avatarText, { fontSize: size * 0.35 }]}>{initials}</Text>
+      <Text style={[styles.avatarText, { fontSize: size * 0.35 }]}>
+        {initials}
+      </Text>
     </View>
   );
 }
+
 
 // ─────────────────────────────────────────────
 // EMPTY STATE

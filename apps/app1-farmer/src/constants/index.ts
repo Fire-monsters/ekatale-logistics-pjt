@@ -33,6 +33,7 @@ export const API_ROUTES = {
   AUTH_REFRESH_TOKEN: '/auth/token/refresh',
   AUTH_LOGOUT:        '/auth/logout',
   AUTH_PROFILE:       '/auth/me',
+  AUTH_UPLOAD_PHOTO:  '/auth/me/photo',
 
   FARMER_PROFILE:          '/farmers/me',
   FARMER_LISTINGS:         '/farmer/listings',

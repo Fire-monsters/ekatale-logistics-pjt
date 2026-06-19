@@ -1,31 +1,31 @@
-// services/auth-service/prisma/schema.prisma
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["multiSchema"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_AUTH_URL")
-  schemas  = ["auth"]
+  provider  = "postgresql"
+  url       = env("DATABASE_AUTH_URL")
+  directUrl = env("DATABASE_AUTH_DIRECT_URL")
+  schemas   = ["auth"]
 }
 
 model User {
-  userId       String    @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
-  phone        String    @unique @db.VarChar(20)
-  passwordHash String    @map("password_hash") @db.VarChar(255)
-  role         Role
-  fullName     String    @map("full_name") @db.VarChar(255)
-  languagePref Language  @default(en) @map("language_pref")
-  kycStatus    KycStatus @default(pending) @map("kyc_status")
-  isActive     Boolean   @default(true) @map("is_active")
-  lastLoginAt  DateTime? @map("last_login_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  userId        String               @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
+  phone         String               @unique @db.VarChar(20)
+  passwordHash  String               @map("password_hash") @db.VarChar(255)
+  role          Role
+  fullName      String               @map("full_name") @db.VarChar(255)
+  languagePref  Language             @default(en) @map("language_pref")
+  kycStatus     KycStatus            @default(pending) @map("kyc_status")
+  isActive      Boolean              @default(true) @map("is_active")
+  profilePhotoUrl  String?   @map("profile_photo_url") @db.VarChar(500)
+  lastLoginAt   DateTime?            @map("last_login_at")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
   farmerProfile FarmerProfile?
+  refreshTokens RefreshToken[]
   agentProfile  VillageAgentProfile?
 
   @@map("users")
@@ -53,62 +53,58 @@ model RefreshToken {
   expiresAt  DateTime @map("expires_at")
   isRevoked  Boolean  @default(false) @map("is_revoked")
   createdAt  DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@map("refresh_tokens")
   @@schema("auth")
 }
 
 model FarmerProfile {
-  farmerId        String   @id @map("farmer_id") @db.Uuid
-  nationalId      String?  @unique @map("national_id") @db.VarChar(50)
-  district        String   @db.VarChar(100)
-  village         String?  @db.VarChar(100)
-  gpsLat          Decimal? @map("gps_lat") @db.Decimal(10, 8)
-  gpsLng          Decimal? @map("gps_lng") @db.Decimal(11, 8)
-  farmSizeAcres   Decimal? @map("farm_size_acres") @db.Decimal(8, 2)
-  cooperativeId   String?  @map("cooperative_id") @db.Uuid
-  paymentProvider String?  @map("payment_provider") @db.VarChar(20)
-  paymentNumber   String?  @map("payment_number") @db.VarChar(20)
-  cropsGrown      String[] @map("crops_grown")
-  registeredByAgentId String? @map("registered_by_agent_id") @db.Uuid
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  user       User              @relation(fields: [farmerId], references: [userId], onDelete: Cascade)
-  agentLinks AgentFarmerLink[]
+  farmerId            String            @id @map("farmer_id") @db.Uuid
+  nationalId          String?           @unique @map("national_id") @db.VarChar(50)
+  district            String            @db.VarChar(100)
+  village             String?           @db.VarChar(100)
+  gpsLat              Decimal?          @map("gps_lat") @db.Decimal(10, 8)
+  gpsLng              Decimal?          @map("gps_lng") @db.Decimal(11, 8)
+  farmSizeAcres       Decimal?          @map("farm_size_acres") @db.Decimal(8, 2)
+  cooperativeId       String?           @map("cooperative_id") @db.Uuid
+  paymentProvider     String?           @map("payment_provider") @db.VarChar(20)
+  paymentNumber       String?           @map("payment_number") @db.VarChar(20)
+  cropsGrown          String[]          @map("crops_grown")
+  registeredByAgentId String?           @map("registered_by_agent_id") @db.Uuid
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+  agentLinks          AgentFarmerLink[]
+  user                User              @relation(fields: [farmerId], references: [userId], onDelete: Cascade)
 
   @@map("farmer_profiles")
   @@schema("auth")
 }
 
 model VillageAgentProfile {
-  agentId           String   @id @map("agent_id") @db.Uuid
-  territoryDistrict String   @map("territory_district") @db.VarChar(100)
-  territoryVillages String[] @map("territory_villages")
-  commissionRate    Decimal  @default(0.02) @map("commission_rate") @db.Decimal(5, 4)
-  totalFarmersReg   Int      @default(0) @map("total_farmers_reg")
-  totalEarnings     Decimal  @default(0) @map("total_earnings") @db.Decimal(15, 2)
-  isActive          Boolean  @default(true) @map("is_active")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-
-  user       User              @relation(fields: [agentId], references: [userId], onDelete: Cascade)
-  agentLinks AgentFarmerLink[]
+  agentId           String            @id @map("agent_id") @db.Uuid
+  territoryDistrict String            @map("territory_district") @db.VarChar(100)
+  territoryVillages String[]          @map("territory_villages")
+  commissionRate    Decimal           @default(0.02) @map("commission_rate") @db.Decimal(5, 4)
+  totalFarmersReg   Int               @default(0) @map("total_farmers_reg")
+  totalEarnings     Decimal           @default(0) @map("total_earnings") @db.Decimal(15, 2)
+  isActive          Boolean           @default(true) @map("is_active")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  agentLinks        AgentFarmerLink[]
+  user              User              @relation(fields: [agentId], references: [userId], onDelete: Cascade)
 
   @@map("village_agent_profiles")
   @@schema("auth")
 }
 
 model AgentFarmerLink {
-  linkId       String   @id @default(dbgenerated("gen_random_uuid()")) @map("link_id") @db.Uuid
-  agentId      String   @map("agent_id") @db.Uuid
-  farmerId     String   @map("farmer_id") @db.Uuid
-  registeredAt DateTime @default(now()) @map("registered_at")
-
-  agent  VillageAgentProfile @relation(fields: [agentId], references: [agentId], onDelete: Cascade)
-  farmer FarmerProfile       @relation(fields: [farmerId], references: [farmerId], onDelete: Cascade)
+  linkId       String              @id @default(dbgenerated("gen_random_uuid()")) @map("link_id") @db.Uuid
+  agentId      String              @map("agent_id") @db.Uuid
+  farmerId     String              @map("farmer_id") @db.Uuid
+  registeredAt DateTime            @default(now()) @map("registered_at")
+  agent        VillageAgentProfile @relation(fields: [agentId], references: [agentId], onDelete: Cascade)
+  farmer       FarmerProfile       @relation(fields: [farmerId], references: [farmerId], onDelete: Cascade)
 
   @@unique([agentId, farmerId])
   @@map("agent_farmer_links")

@@ -28,6 +28,7 @@ export interface RegistrationDraft {
   paymentProvider?:   'mtn' | 'airtel';
   paymentNumber?:     string;
   password?:          string; // ← added: needed for register after OTP verify
+  profilePhotoUri?:   string; // ← added: temp local URI of profile photo to upload during registration
 }
 
 interface AuthState {
@@ -135,7 +136,6 @@ export const completeRegistration = createAsyncThunk(
         return rejectWithValue('Session expired. Please restart registration.');
       }
 
-      // Build the full registration payload from saved draft
       const registerPayload: RegisterUserPayload = {
         phone:             pendingPhone,
         fullName:          registrationDraft.fullName!,
@@ -154,13 +154,27 @@ export const completeRegistration = createAsyncThunk(
         territoryVillages: registrationDraft.territoryVillages,
       };
 
-      // Create the user account
+      // Step 1: create the user account
       await authApi.registerUser(registerPayload);
 
-      // Issue JWT tokens
+      // Step 2: issue JWT tokens
       const session = await authApi.login(pendingPhone);
+
+      // Step 3: persist tokens BEFORE anything that needs auth
       await persistTokens(session.accessToken, session.refreshToken);
 
+      // Step 4: upload profile photo (authenticated now, before applySession)
+      // Non-blocking — a flaky upload must NOT lock someone out of their account.
+      if (registrationDraft.profilePhotoUri) {
+        try {
+          await authApi.uploadProfilePhoto(registrationDraft.profilePhotoUri);
+        } catch (photoErr) {
+          // Log and continue — user can add photo from profile later
+          console.warn('[completeRegistration] Photo upload failed:', photoErr);
+        }
+      }
+
+      // Step 5: return session → reducer calls applySession → isAuthenticated = true
       return session;
     } catch (err: any) {
       return rejectWithValue(err.message ?? 'Registration failed');

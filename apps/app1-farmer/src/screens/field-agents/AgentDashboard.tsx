@@ -4,6 +4,10 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, RefreshControl,
 } from 'react-native';
+
+import { Avatar } from '../../components';
+import { selectUserProfile } from '../../store/slices/userSlice';
+
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
@@ -19,6 +23,7 @@ type Nav = NativeStackNavigationProp<AgentStackParams>;
 export default function AgentDashboard() {
   const navigation = useNavigation<Nav>();
   const user = useAppSelector(selectAuthUser);
+  const profile = useAppSelector(selectUserProfile);
   const unreadCount = useAppSelector(selectUnreadCount);
 
   const { data, isLoading, refetch } = useQuery({
@@ -35,26 +40,39 @@ export default function AgentDashboard() {
     <View style={GS.screen}>
       {/* Header */}
       <View style={s.header}>
-        <View style={s.headerRow}>
-          <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={s.menuIcon}>☰</Text>
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>E-Katale · Field Agent</Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Notifications')}
-            style={s.bellWrap}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text style={{ fontSize: 22, color: '#fff' }}>🔔</Text>
-            {unreadCount > 0 && (
-              <View style={[GS.badge, { borderColor: '#6A1B9A' }]}>
-                <Text style={GS.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+  {/* ── Left: avatar + greeting ── */}
+  <View style={s.headerLeft}>
+    <Avatar
+      uri={profile?.profilePhotoUrl}
+      name={user?.fullName ?? firstName}
+      size={40}
+      style={s.avatarBorder}
+    />
+    <View>
+      <Text style={s.helloLabel}>Hello,</Text>
+      <Text style={s.helloName}>{firstName}</Text>
+    </View>
+  </View>
+
+  {/* ── Right: bell + menu ── */}
+  <View style={s.headerRight}>
+    <TouchableOpacity
+      onPress={() => navigation.navigate('Notifications')}
+      style={s.bellWrap}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <Text style={{ fontSize: 22, color: '#fff' }}>🔔</Text>
+      {unreadCount > 0 && (
+        <View style={[GS.badge, { borderColor: '#6A1B9A' }]}>
+          <Text style={GS.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
         </View>
-        <Text style={s.greeting}>Welcome back, {firstName} 👋</Text>
-      </View>
+      )}
+    </TouchableOpacity>
+    <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <Text style={s.menuIcon}>☰</Text>
+    </TouchableOpacity>
+  </View>
+</View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -124,11 +142,45 @@ function ActionCard({
 }
 
 const s = StyleSheet.create({
-  header: { backgroundColor: '#6A1B9A', padding: Space.md, paddingTop: Space.sm, gap: 12 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  menuIcon: { fontSize: 22, color: Colors.textInverse },
-  headerTitle: { fontSize: 16, fontWeight: Font.weight.bold, color: Colors.textInverse },
+  header: {
+    backgroundColor: '#6A1B9A',
+    paddingHorizontal: Space.md,
+    paddingVertical: Space.md,
+    paddingTop: Space.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  avatarBorder: {
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
+  },
+  helloLabel: {
+    fontSize: Font.size.caption,
+    color: 'rgba(255,255,255,0.75)',
+    lineHeight: 16,
+  },
+  helloName: {
+    fontSize: Font.size.body,
+    fontWeight: Font.weight.bold,
+    color: Colors.textInverse,
+    lineHeight: 20,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
   bellWrap: { position: 'relative' },
+  menuIcon: { fontSize: 22, color: Colors.textInverse },
+
   greeting: { fontSize: Font.size.body, fontWeight: Font.weight.semiBold, color: Colors.textInverse },
 
   body: { padding: Space.md, gap: Space.md, paddingBottom: 48 },

@@ -101,4 +101,18 @@ export const authApi = {
   /** Get authenticated user profile */
   getProfile: () =>
     get<User>(API_ROUTES.AUTH_PROFILE),
+
+    /**
+   * Upload profile photo — mirrors listingApi.uploadPhotos pattern.
+   * uri is a local file:// URI from the image picker.
+   */
+  uploadProfilePhoto: (uri: string) => {
+    const formData = new FormData()
+    formData.append('photo', {
+      uri,
+      type: 'image/jpeg',
+      name: `profile_${Date.now()}.jpg`,
+    } as any)
+    return post<User>(API_ROUTES.AUTH_UPLOAD_PHOTO, formData)
+  },
 };

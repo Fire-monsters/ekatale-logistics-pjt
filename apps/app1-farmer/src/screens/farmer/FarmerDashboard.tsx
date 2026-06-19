@@ -30,11 +30,12 @@ import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { selectUserProfile } from '../../store/slices/userSlice';
 import { selectActiveListings, fetchMyListings } from '../../store/slices/listingSlice';
 import { selectUnreadCount } from '../../store/slices/notificationSlice';
-import { SafeScreen } from '../../components';
+import { Avatar, SafeScreen } from '../../components';
 import { StatusBadge } from '../../components/common';
 import { formatUGX } from '../../utils/currency';
 import { timeAgo } from '../../utils/date';
 import type { ProduceListing } from '../../types';
+
 
 type Nav = NativeStackNavigationProp<FarmerStackParams>;
 
@@ -65,31 +66,40 @@ export default function FarmerDashboard() {
     <SafeScreen padded={false} backgroundColor={Colors.bg} statusBarStyle="dark-content">
       <View style={GS.screen}>
         <View style={s.header}>
-          <View style={s.headerRow}>
-            <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Menu size={24} color={Colors.textPrimary} strokeWidth={2.4} />
-            </TouchableOpacity>
+               {/* ── Left: avatar + greeting ── */}
+  <View style={s.headerLeft}>
+    <Avatar
+      uri={profile?.profilePhotoUrl}
+      name={profile?.fullName ?? firstName}
+      size={40}
+    />
+    <View>
+      <Text style={s.helloText}>Hello,</Text>
+      <Text style={s.helloName}>{firstName}</Text>
+    </View>
+  </View>
 
-            <Text style={s.headerTitle}>E-KATALE LOGISTICS</Text>
-
-            <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
-              <TouchableOpacity>
-                <Globe2 size={21} color={Colors.textPrimary} strokeWidth={2.3} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Notifications')}
-                style={s.bellWrap}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Bell size={22} color={Colors.textPrimary} strokeWidth={2.4} />
-                {unreadCount > 0 && (
-                  <View style={[GS.badge, { borderColor: Colors.bg }]}>
-                    <Text style={GS.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+  {/* ── Right: language, bell, menu ── */}
+  <View style={s.headerRight}>
+    <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+      <Globe2 size={21} color={Colors.textPrimary} strokeWidth={2.3} />
+    </TouchableOpacity>
+    <TouchableOpacity
+      onPress={() => navigation.navigate('Notifications')}
+      style={s.bellWrap}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <Bell size={22} color={Colors.textPrimary} strokeWidth={2.4} />
+      {unreadCount > 0 && (
+        <View style={[GS.badge, { borderColor: Colors.bg }]}>
+          <Text style={GS.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+    <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <Menu size={24} color={Colors.textPrimary} strokeWidth={2.4} />
+    </TouchableOpacity>
+        </View>
 
           <Text style={s.greeting}>{greeting()}, {firstName}!</Text>
 
@@ -99,7 +109,7 @@ export default function FarmerDashboard() {
               <CloudSun size={30} color={Colors.textInverse} strokeWidth={2.2} />
             </View>
             <View style={s.weatherCopy}>
-              <Text style={s.weatherMain}>24°C</Text>
+              <Text style={s.weatherMain}>24°C, Kampala</Text>
               <Text style={s.weatherPlace}>Kampala</Text>
               <View style={s.weatherTipRow}>
                 <Lightbulb size={14} color="rgba(255,255,255,0.82)" strokeWidth={2.2} />
@@ -257,33 +267,43 @@ function ListingRow({ listing, onPress }: { listing: ProduceListing; onPress: ()
 }
 
 const s = StyleSheet.create({
-  // Header
   header: {
     paddingHorizontal: Space.md,
-    paddingBottom: Space.md,
+    paddingVertical: Space.md,
     paddingTop: Space.sm,
-    gap: 26,
-  },
-
-  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    gap: 12,
   },
-
-  headerTitle: {
-    fontSize: 18,
-    alignContent: 'flex-end',
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  helloText: {
+    fontSize: Font.size.caption,
+    color: Colors.textMuted,
+    lineHeight: 16,
+  },
+  helloName: {
+    fontSize: Font.size.body,
     fontWeight: Font.weight.bold,
-    color: Colors.textPrimary
+    color: Colors.textPrimary,
+    lineHeight: 20,
   },
-
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
   bellWrap: { position: 'relative' },
 
   greeting: {
-    fontSize: Font.size.body,
+    fontSize: 22,
     fontWeight: Font.weight.semiBold,
-    color: Colors.textSecondary
+    color: Colors.textPrimary
   },
 
   weatherStrip: {

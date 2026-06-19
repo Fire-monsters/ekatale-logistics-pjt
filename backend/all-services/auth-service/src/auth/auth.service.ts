@@ -287,6 +287,20 @@ export class AuthService {
 
     return { accessToken, refreshToken }
   }
+
+  // ── Upload / update profile photo ─────────────────────────
+  async uploadProfilePhoto(userId: string, file: Express.Multer.File) {
+    const { saveProfilePhoto } = await import('../lib/storage')
+    const profilePhotoUrl = await saveProfilePhoto(userId, file)
+
+    const user = await prisma.user.update({
+      where: { userId },
+      data:  { profilePhotoUrl },
+    })
+
+    const { passwordHash: _, ...safeUser } = user as any
+    return safeUser
+  }
 }
 
 export const authService = new AuthService()

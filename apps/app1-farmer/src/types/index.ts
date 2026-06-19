@@ -20,6 +20,12 @@ export interface User {
   name?: string;
   fullName?: string;
   language: Language;
+  profilePhotoUrl?: string;
+  //kycStatus?: 'pending' | 'verified' | 'rejected';
+  //createdAt: string;
+  //updatedAt?: string;
+  //farmerProfile?: FarmerProfile;
+  //agentProfile?: AgentProfile;
 }
 
 export interface FarmerProfile {

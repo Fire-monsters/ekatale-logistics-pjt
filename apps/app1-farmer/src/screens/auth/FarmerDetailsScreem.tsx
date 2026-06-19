@@ -2,9 +2,13 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
+  View, Text, Image, StyleSheet, TouchableOpacity,
   ScrollView, TextInput, ActivityIndicator,
 } from 'react-native';
+
+
+import * as ImagePicker from 'expo-image-picker';
+import { requestCameraPermission, requestGalleryPermission } from '../../utils/permissions';
 
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -66,7 +70,12 @@ export default function FarmerDetailsScreen() {
   const [crops,       setCrops]       = useState<string[]>(draft.cropsGrown ?? []);
   const [gps,         setGps]         = useState<{ lat: number; lng: number } | null>(
     draft.gpsLat ? { lat: draft.gpsLat, lng: draft.gpsLng! } : null,
-  );
+  )
+
+  const [profilePhotoUri, setProfilePhotoUri] = useState<string>(
+  draft.profilePhotoUri ?? ''
+);
+
   const [gpsLoading, setGpsLoading]  = useState(false);
   const [errors,      setErrors]      = useState<Record<string, string>>({});
 
@@ -74,15 +83,16 @@ export default function FarmerDetailsScreen() {
     setCrops((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
 
   const validate = () => {
-    const e: Record<string, string> = {};
-    if (!fullName.trim() || fullName.trim().length < 3) e.fullName = 'Enter your full name (min 3 chars)';
-    if (!nin.trim() || nin.trim().length < 10)          e.nin      = 'Enter your National ID number';
-    if (!district)                                       e.district = 'Select your district';
-    if (!farmSize || parseFloat(farmSize) <= 0)          e.farmSize = 'Enter farm size in acres';
-    if (crops.length === 0)                              e.crops    = 'Select at least one crop';
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
+  const e: Record<string, string> = {};
+  if (!profilePhotoUri)                                        e.photo    = 'Please add a profile photo';
+  if (!fullName.trim() || fullName.trim().length < 3)         e.fullName = 'Enter your full name (min 3 chars)';
+  if (!nin.trim() || nin.trim().length < 10)                  e.nin      = 'Enter your National ID number';
+  if (!district)                                              e.district = 'Select your district';
+  if (!farmSize || parseFloat(farmSize) <= 0)                 e.farmSize = 'Enter farm size in acres';
+  if (crops.length === 0)                                     e.crops    = 'Select at least one crop';
+  setErrors(e);
+  return Object.keys(e).length === 0;
+};
 
   const handleGPS = async () => {
     setGpsLoading(true);
@@ -105,6 +115,24 @@ export default function FarmerDetailsScreen() {
     navigation.navigate('PhonePassword', { role: 'farmer' });
   };
 
+  const pickPhoto = async (source: 'camera' | 'gallery') => {
+  const perm = source === 'camera'
+    ? await requestCameraPermission()
+    : await requestGalleryPermission();
+  if (perm !== 'granted') return;
+
+  const result = source === 'camera'
+    ? await ImagePicker.launchCameraAsync({ quality: 0.8, allowsEditing: true, aspect: [1, 1] })
+    : await ImagePicker.launchImageLibraryAsync({ quality: 0.8, allowsEditing: true, aspect: [1, 1] });
+
+  if (!result.canceled && result.assets[0]) {
+    const uri = result.assets[0].uri;
+    setProfilePhotoUri(uri);
+    dispatch(updateRegistrationDraft({ profilePhotoUri: uri }));
+    setErrors((e) => ({ ...e, photo: '' }));
+  }
+};
+
   return (
     <ScrollView
       style={styles.root}
@@ -113,8 +141,8 @@ export default function FarmerDetailsScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-        <Text style={styles.backText}>← Back</Text>
+      <TouchableOpacity style={styles.btn} onPress={() => navigation.goBack()}>
+        <Text style={styles.btnText}>← Back</Text>
       </TouchableOpacity>
 
       <View style={styles.headerBlock}>
@@ -124,6 +152,35 @@ export default function FarmerDetailsScreen() {
       </View>
 
       <StepIndicator current={1} total={3} />
+
+      {/* Profile Photo */}
+      <View style={styles.field}>
+         <Text style={styles.label}>
+            Profile Photo <Text style={styles.req}>*</Text>
+         </Text>
+              <Text style={[styles.hint, { marginBottom: 8 }]}>
+                Used to identify you on the platform
+         </Text>
+
+         <View style={styles.row}>
+           {profilePhotoUri ? (
+             <Image source={{ uri: profilePhotoUri }} style={styles.preview} />
+           ) : (
+             <View style={styles.placeholder}>
+               <Text style={styles.placeholderIcon}>📷</Text>
+             </View>
+           )}
+           <View style={styles.btns}>
+             <TouchableOpacity style={styles.btn} onPress={() => pickPhoto('camera')}>
+               <Text style={styles.btnText}>📷 Camera</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={styles.btn} onPress={() => pickPhoto('gallery')}>
+               <Text style={styles.btnText}>🖼️ Gallery</Text>
+             </TouchableOpacity>
+           </View>
+         </View>
+         {errors.photo ? <Text style={styles.error}>{errors.photo}</Text> : null}
+       </View>
 
       {/* Full name */}
       <View style={styles.field}>
@@ -263,8 +320,44 @@ const styles = StyleSheet.create({
     gap: Space.md,
     paddingBottom: 40,
   },
-  backBtn:  { alignSelf: 'flex-start', paddingVertical: Space.sm },
-  backText: { fontSize: Font.size.body, color: Colors.green, fontWeight: Font.weight.medium },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  preview: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: Colors.green,
+  },
+  placeholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    backgroundColor: Colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderIcon: { fontSize: 32 },
+  btns: { flex: 1, gap: 10 },
+  btn: {
+    borderWidth: 2,
+    borderColor: Colors.greenBorder,
+    borderRadius: Layout.radius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    backgroundColor: Colors.greenLight,
+  },
+  btnText: {
+    fontSize: Font.size.label,
+    color: Colors.green,
+    fontWeight: Font.weight.semiBold,
+  },
 
   headerBlock: { alignItems: 'center', gap: 6, paddingVertical: Space.sm },
   pageEmoji:   { fontSize: 40 },
