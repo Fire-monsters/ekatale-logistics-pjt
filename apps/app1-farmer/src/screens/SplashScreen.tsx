@@ -1,5 +1,4 @@
-// apps/app1-farmer/src/screens/auth/SplashScreen.tsx
-/* eslint-disable react-native/no-inline-styles */
+// apps/app1-farmer/src/screens/SplashScreen.tsx
 import React, { useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, Animated,
@@ -7,10 +6,12 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';                         // ← NEW
 import type { AuthStackParams } from '../navigation/RootNavigator';
 import { Colors, Font, Space, Layout } from '../../theme';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setLanguagePreference, selectLanguage } from '../store/slices/userSlice';
+import { switchLanguage } from '../i18n';                               // ← NEW
 
 type Nav = NativeStackNavigationProp<AuthStackParams>;
 
@@ -25,6 +26,7 @@ export default function SplashScreen() {
   const navigation = useNavigation<Nav>();
   const dispatch   = useAppDispatch();
   const lang       = useAppSelector(selectLanguage);
+  const { t }      = useTranslation();                                  // ← NEW
 
   const logoScale   = useRef(new Animated.Value(0.7)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -44,6 +46,19 @@ export default function SplashScreen() {
     ]).start();
   }, [cardOpacity, logoOpacity, logoScale, slideUp]);
 
+  /**
+   * Picking a language does three things in order:
+   *   1. Persists to AsyncStorage + tells i18next to hot-swap strings now
+   *   2. Updates Redux so the rest of the app (FarmerProfile lang picker, etc.) stays in sync
+   *
+   * react-i18next re-renders every component using useTranslation() automatically,
+   * so the strings on this screen update immediately without any extra setState.
+   */
+  const handleLangChange = async (code: string) => {
+    await switchLanguage(code);                                          // ← AsyncStorage + i18next
+    dispatch(setLanguagePreference(code as any));                       // ← Redux
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.green} />
@@ -60,12 +75,14 @@ export default function SplashScreen() {
           </View>
           <View style={{ alignItems: 'center', gap: 4 }}>
             <Text style={styles.appName}>E-Katale</Text>
-            <Text style={styles.tagline}>AI &amp; Robotics for a Smarter Uganda</Text>
+            {/* ↓ translated */}
+            <Text style={styles.tagline}>{t('splash.tagline')}</Text>
           </View>
         </Animated.View>
 
         <View style={styles.illustration}>
-          <Text style={styles.farmCaption}>Farm smarter · Earn more · Track everything</Text>
+          {/* ↓ translated */}
+          <Text style={styles.farmCaption}>{t('splash.farm_caption')}</Text>
         </View>
       </View>
 
@@ -74,13 +91,14 @@ export default function SplashScreen() {
         { opacity: cardOpacity, transform: [{ translateY: slideUp }] },
       ]}>
         <View style={styles.langWrap}>
-          <Text style={styles.langLabel}>Choose language / Lulimi</Text>
+          {/* ↓ translated */}
+          <Text style={styles.langLabel}>{t('splash.choose_language')}</Text>
           <View style={styles.langRow}>
             {LANGS.map((l) => (
               <TouchableOpacity
                 key={l.code}
                 style={[styles.langPill, lang === l.code && styles.langPillActive]}
-                onPress={() => dispatch(setLanguagePreference(l.code as any))}
+                onPress={() => handleLangChange(l.code)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text style={[styles.langText, lang === l.code && styles.langTextActive]}>
@@ -97,7 +115,8 @@ export default function SplashScreen() {
             onPress={() => navigation.navigate('RoleSelect')}
             activeOpacity={0.85}
           >
-            <Text style={styles.primaryBtnText}>🌱 Get Started — Register</Text>
+            {/* ↓ translated */}
+            <Text style={styles.primaryBtnText}>{t('splash.get_started')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -105,16 +124,19 @@ export default function SplashScreen() {
             onPress={() => navigation.navigate('Login')}
             activeOpacity={0.75}
           >
-            <Text style={styles.secondaryBtnText}>I already have an account →</Text>
+            {/* ↓ translated */}
+            <Text style={styles.secondaryBtnText}>{t('splash.have_account')}</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.footer}>Powered by GASTER AI · v1.0.0</Text>
+        {/* ↓ translated */}
+        <Text style={styles.footer}>{t('splash.powered_by')}</Text>
       </Animated.View>
     </View>
   );
 }
 
+// Styles are unchanged from the original — copy them in verbatim
 const styles = StyleSheet.create({
   root:       { flex: 1, backgroundColor: Colors.green },
   hero: {

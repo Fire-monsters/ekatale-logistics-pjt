@@ -1,0 +1,17 @@
+{
+  "greeting": {
+    "hello": "Hello,",
+    "good_morning": "Good morning",
+    "good_afternoon": "Good afternoon",
+    "good_evening": "Good evening",
+    "welcome_back": "Welcome back,"
+  },
+  "splash": {
+    "tagline": "AI & Robotics for a Smarter Uganda",
+    "farm_caption": "Farm smarter · Earn more · Track everything",
+    "choose_language": "Choose language / Lulimi",
+    "get_started": "🌱 Get Started — Register",
+    "have_account": "I already have an account →",
+    "powered_by": "Powered by GASTER AI · v1.0.0"
+  }
+}

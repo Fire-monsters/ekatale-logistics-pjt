@@ -10,6 +10,9 @@
       "projectId": "8674f892-6338-44dc-921f-97be904fb3bf"
     }
   },
+    "expo": {
+    "plugins": ["expo-localization"]
+  },
   "owner": "ekatale-logitics",
   "slug": "ekatale"
 }

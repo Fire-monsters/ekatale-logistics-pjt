@@ -1,0 +1,17 @@
+{
+  "greeting": {
+    "hello": "Habari,",
+    "good_morning": "Habari za asubuhi",
+    "good_afternoon": "Habari za mchana",
+    "good_evening": "Habari za jioni",
+    "welcome_back": "Karibu tena,"
+  },
+  "splash": {
+    "tagline": "AI na Teknolojia kwa Uganda Bora",
+    "farm_caption": "Lima kwa akili · Pata zaidi · Fuatilia kila kitu",
+    "choose_language": "Chagua lugha / Lulimi",
+    "get_started": "🌱 Anza — Jisajili",
+    "have_account": "Nina akaunti tayari →",
+    "powered_by": "Inayotumia GASTER AI · v1.0.0"
+  }
+}

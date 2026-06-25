@@ -1,4 +1,8 @@
 {
   "name": "ekatale_app",
-  "displayName": "ekatale_app"
+  "displayName": "ekatale_app",
+
+    "expo": {
+    "plugins": ["expo-localization"]
+  }
 }

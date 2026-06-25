@@ -63,10 +63,10 @@ export default function FarmerDashboard() {
   const pendingCount = listings.filter(l => l.status === 'ORDER_CONFIRMED').length;
 
   return (
-    <SafeScreen padded={false} backgroundColor={Colors.bg} statusBarStyle="dark-content">
-      <View style={GS.screen}>
-        <View style={s.header}>
-               {/* ── Left: avatar + greeting ── */}
+  <SafeScreen padded={false} backgroundColor={Colors.bg} statusBarStyle="dark-content">
+  <View style={GS.screen}>
+  <View style={s.header}>
+  {/* ── Left: avatar + greeting ── */}
   <View style={s.headerLeft}>
     <Avatar
       uri={profile?.profilePhotoUrl}
@@ -75,7 +75,7 @@ export default function FarmerDashboard() {
     />
     <View>
       <Text style={s.helloText}>Hello,</Text>
-      <Text style={s.helloName}>{firstName}</Text>
+      <Text style={s.greeting}>{greeting()}, {firstName}!</Text>
     </View>
   </View>
 
@@ -99,10 +99,11 @@ export default function FarmerDashboard() {
     <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
       <Menu size={24} color={Colors.textPrimary} strokeWidth={2.4} />
     </TouchableOpacity>
-        </View>
+  </View>
+</View>
 
-          <Text style={s.greeting}>{greeting()}, {firstName}!</Text>
 
+  <View>
           {/* Weather strip */}
           <View style={s.weatherStrip}>
             <View style={s.weatherIcon}>
@@ -116,12 +117,12 @@ export default function FarmerDashboard() {
                 <Text style={s.weatherTip}>Good weather today - ideal for harvesting</Text>
               </View>
             </View>
-            <View style={s.rainTag}>
-              <CloudRain size={15} color={Colors.gold} strokeWidth={2.2} />
-              <Text style={s.rainText}>Fri</Text>
-            </View>
-          </View>
-        </View>
+          <View style={s.rainTag}>
+          <CloudRain size={15} color={Colors.gold} strokeWidth={2.2} />
+        <Text style={s.rainText}>Fri</Text>
+      </View>
+    </View>
+  </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}

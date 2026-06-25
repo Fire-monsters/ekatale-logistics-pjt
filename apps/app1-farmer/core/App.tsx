@@ -1,14 +1,16 @@
-import React from 'react';
-import { Text, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Text, TextInput, View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { store } from '../src/store';
 import { RootNavigator } from '../src/navigation/RootNavigator';
 import { configureNotifications } from '../src/utils/permissions';
-import { Font } from '../theme';
+import { Font, Colors } from '../theme';
+import { initI18n } from '../src/i18n';
+import { setLanguagePreference } from '../src/store/slices/userSlice';
+import type { Language } from '../src/types';
 
-// Configure push notification handler at startup
 configureNotifications();
 
 const queryClient = new QueryClient({
@@ -23,13 +25,33 @@ const queryClient = new QueryClient({
 
 const AppText = Text as typeof Text & { defaultProps?: { style?: unknown } };
 const AppTextInput = TextInput as typeof TextInput & { defaultProps?: { style?: unknown } };
-
 AppText.defaultProps = AppText.defaultProps ?? {};
 AppText.defaultProps.style = [AppText.defaultProps.style, { fontFamily: Font.family }];
 AppTextInput.defaultProps = AppTextInput.defaultProps ?? {};
 AppTextInput.defaultProps.style = [AppTextInput.defaultProps.style, { fontFamily: Font.family }];
 
 function App() {
+  const [i18nReady, setI18nReady] = useState(false);
+
+  useEffect(() => {
+    initI18n().then((i18nInstance) => {
+      // Sync the resolved language back into Redux so both sources of truth
+      // agree from the very first render (AsyncStorage → i18n → Redux).
+      store.dispatch(
+        setLanguagePreference(i18nInstance.language as Language),
+      );
+      setI18nReady(true);
+    });
+  }, []);
+
+  if (!i18nReady) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.bg }}>
+        <ActivityIndicator size="large" color={Colors.green} />
+      </View>
+    );
+  }
+
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>

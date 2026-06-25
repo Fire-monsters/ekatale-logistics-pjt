@@ -1,0 +1,17 @@
+{
+  "greeting": {
+    "hello": "Wasibuka,",
+    "good_morning": "Wasuze otya",
+    "good_afternoon": "Osiibye otya",
+    "good_evening": "Osiibye otya bulungi",
+    "welcome_back": "Tukusanyukira,"
+  },
+  "splash": {
+    "tagline": "AI ne Tekinologiya ey'obuggya mu Uganda",
+    "farm_caption": "Lima n'amagezi · Nufuna ssente · Kulabirira byona",
+    "choose_language": "Londa olulimi",
+    "get_started": "🌱 Tandika — Wandiika",
+    "have_account": "Ndina akaunti →",
+    "powered_by": "Powered by GASTER AI · v1.0.0"
+  }
+}
