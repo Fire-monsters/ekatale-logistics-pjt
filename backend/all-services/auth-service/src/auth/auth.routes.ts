@@ -3,6 +3,7 @@
 import { Router } from 'express'
 import multer     from 'multer'
 import { authController } from './auth.controller'
+import consumerRoutes from './consumer.routes'
 import { authenticate }   from '../middleware/rbac.middleware'
 
 const router = Router()
@@ -20,6 +21,7 @@ router.post('/register',       authController.register.bind(authController))
 router.post('/login',          authController.login.bind(authController))
 router.post('/login/password', authController.loginWithPassword.bind(authController))
 router.post('/token/refresh',  authController.refreshToken.bind(authController))
+router.use('/consumer', consumerRoutes)
 
 // ── Protected routes ──────────────────────────────────────────────────────────
 router.post('/logout',   authenticate, authController.logout.bind(authController))

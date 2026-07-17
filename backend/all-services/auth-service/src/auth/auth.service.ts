@@ -143,6 +143,13 @@ export class AuthService {
         })
       }
 
+      // PERMANENT RULE: consumer role cannot be upgraded to farmer or village_agent.
+      // This is enforced architecturally: no farmer/agent profile record is ever
+      // created for a consumer, making role stacking structurally impossible.
+      if (role === 'consumer') {
+        // Shoppers have no farm profile, no agent profile, no MoMo payout account.
+      }
+
       return newUser
     }).catch((err: any) => {
   if (err.code === 'P2002') {

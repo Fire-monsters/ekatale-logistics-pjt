@@ -43,6 +43,7 @@ model Commodity {
   createdAt   DateTime         @default(now()) @map("created_at")
   prices      PriceGuidance[]
   listings    ProduceListing[]
+  skus        SKU[]
 
   @@map("commodities")
   @@schema("listings")
@@ -292,3 +293,55 @@ enum Role {
 
   @@schema("auth")
 }
+
+model SKU {
+  skuId       String           @id @default(dbgenerated("gen_random_uuid()")) @map("sku_id") @db.Uuid
+  skuCode     String           @unique @map("sku_code") @db.VarChar(50)
+  commodityId String           @map("commodity_id") @db.VarChar(50)
+  grade       String           @default("B") @map("grade") @db.Char(1)
+  unit        String           @default("kg") @map("unit") @db.VarChar(20)
+  name        String           @map("name") @db.VarChar(255)
+  description String?          @map("description")
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  commodity   Commodity        @relation(fields: [commodityId], references: [commodityId])
+  stocks      WarehouseStock[]
+  movements   StockMovement[]
+
+  @@map("skus")
+  @@schema("listings")
+}
+
+model WarehouseStock {
+  stockId          String   @id @default(dbgenerated("gen_random_uuid()")) @map("stock_id") @db.Uuid
+  warehouseId      String   @map("warehouse_id") @db.Uuid
+  skuId            String   @map("sku_id") @db.Uuid
+  quantity         Decimal  @default(0) @map("quantity") @db.Decimal(10, 2)
+  reservedQuantity Decimal  @default(0) @map("reserved_quantity") @db.Decimal(10, 2)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  sku              SKU      @relation(fields: [skuId], references: [skuId], onDelete: Cascade)
+
+  @@unique([warehouseId, skuId])
+  @@map("warehouse_stocks")
+  @@schema("listings")
+}
+
+model StockMovement {
+  movementId    String   @id @default(dbgenerated("gen_random_uuid()")) @map("movement_id") @db.Uuid
+  warehouseId   String   @map("warehouse_id") @db.Uuid
+  skuId         String   @map("sku_id") @db.Uuid
+  quantity      Decimal  @map("quantity") @db.Decimal(10, 2)
+  type          String   @map("type") @db.VarChar(30)
+  referenceType String?  @map("reference_type") @db.VarChar(50)
+  referenceId   String?  @map("reference_id") @db.VarChar(100)
+  notes         String?  @map("notes")
+  changedBy     String   @map("changed_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+  sku           SKU      @relation(fields: [skuId], references: [skuId])
+
+  @@map("stock_movements")
+  @@schema("listings")
+}
+

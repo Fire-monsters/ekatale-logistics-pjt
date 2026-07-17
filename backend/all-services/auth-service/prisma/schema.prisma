@@ -11,18 +11,21 @@ datasource db {
 }
 
 model User {
-  userId        String               @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
-  phone         String               @unique @db.VarChar(20)
-  passwordHash  String               @map("password_hash") @db.VarChar(255)
-  role          Role
-  fullName      String               @map("full_name") @db.VarChar(255)
-  languagePref  Language             @default(en) @map("language_pref")
-  kycStatus     KycStatus            @default(pending) @map("kyc_status")
-  isActive      Boolean              @default(true) @map("is_active")
-  profilePhotoUrl  String?   @map("profile_photo_url") @db.VarChar(500)
-  lastLoginAt   DateTime?            @map("last_login_at")
-  createdAt     DateTime             @default(now()) @map("created_at")
-  updatedAt     DateTime             @updatedAt @map("updated_at")
+  userId          String               @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
+  phone           String?              @unique @db.VarChar(20)
+  passwordHash    String?              @map("password_hash") @db.VarChar(255)
+  role            Role
+  fullName        String               @map("full_name") @db.VarChar(255)
+  languagePref    Language             @default(en) @map("language_pref")
+  kycStatus       KycStatus            @default(pending) @map("kyc_status")
+  isActive        Boolean              @default(true) @map("is_active")
+  profilePhotoUrl String?              @map("profile_photo_url") @db.VarChar(500)
+  lastLoginAt     DateTime?            @map("last_login_at")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  supabaseUserId  String?              @unique @map("supabase_user_id")
+  email           String?              @unique @db.VarChar(255)
 
   farmerProfile FarmerProfile?
   refreshTokens RefreshToken[]

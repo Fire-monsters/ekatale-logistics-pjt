@@ -53,6 +53,10 @@ export const CompleteRegistrationSchema = z.object({
   if (data.role === 'village_agent') {
     return data.territoryDistrict
   }
+  // Consumers do not need farmer, agent, or payout fields.
+  if (data.role === 'consumer') {
+    return true
+  }
   return true
 }, {
   message: 'Missing required fields for this role',
@@ -67,7 +71,18 @@ export const RefreshTokenSchema = z.object({
   refreshToken: z.string().min(1),
 })
 
+export const ConsumerGoogleAuthSchema = z.object({
+  accessToken: z.string().min(1, 'Access token is required'),
+})
+
+export const ConsumerPhoneAuthSchema = z.object({
+  phone: z.string().min(1, 'Phone number is required'),
+  otp: z.string().min(1).optional(),
+})
+
 export type RequestOtpInput           = z.infer<typeof RequestOtpSchema>
 export type VerifyOtpInput            = z.infer<typeof VerifyOtpSchema>
 export type CompleteRegistrationInput = z.infer<typeof CompleteRegistrationSchema>
 export type LoginWithPasswordInput    = z.infer<typeof LoginWithPasswordSchema>
+export type ConsumerGoogleAuthInput  = z.infer<typeof ConsumerGoogleAuthSchema>
+export type ConsumerPhoneAuthInput   = z.infer<typeof ConsumerPhoneAuthSchema>
