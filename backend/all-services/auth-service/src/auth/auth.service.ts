@@ -180,7 +180,11 @@ export class AuthService {
     if (!user) throw new Error('USER_NOT_FOUND')
     if (!user.isActive) throw new Error('ACCOUNT_SUSPENDED')
 
-    const valid = await bcrypt.compare(password, user.passwordHash)
+    if (!user.passwordHash) {
+  throw new Error("PASSWORD_NOT_SET")
+  }
+
+  const valid = await bcrypt.compare(password, user.passwordHash)
     if (!valid) throw new Error('INVALID_CREDENTIALS')
 
     return { message: 'Credentials valid' }
@@ -198,9 +202,16 @@ export class AuthService {
       data:  { lastLoginAt: new Date() },
     })
 
-    const tokens = await this.issueTokens(
-      user.userId, user.role, user.phone, deviceInfo
-    )
+    if (!user.phone) {
+      throw new Error("PHONE_NOT_FOUND")
+    }
+
+const tokens = await this.issueTokens(
+  user.userId,
+  user.role,
+  user.phone,
+  deviceInfo
+)
 
     return {
       user: {
@@ -241,11 +252,15 @@ export class AuthService {
     })
     if (!user || !user.isActive) throw new Error('ACCOUNT_SUSPENDED')
 
-    const accessToken = generateAccessToken({
-      userId: user.userId,
-      role:   user.role,
-      phone:  user.phone,
-    })
+if (!user.phone) {
+  throw new Error("PHONE_NOT_FOUND")
+}
+
+const accessToken = generateAccessToken({
+  userId: user.userId,
+  role: user.role,
+  phone: user.phone,
+})
 
     return { accessToken }
   }

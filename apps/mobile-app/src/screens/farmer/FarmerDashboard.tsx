@@ -1,23 +1,19 @@
 /* eslint-disable react-native/no-inline-styles */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, RefreshControl,
+  TouchableOpacity, RefreshControl, Dimensions,
 } from 'react-native';
 
 import {
-  AlarmCheck,
-  BarChart3,
   Bell,
-  Bot,
   ClipboardList,
-  CloudRain,
-  CloudSun,
+  CreditCard,
   Globe2,
-  Lightbulb,
+  HeartPulse,
   Menu,
+  Phone,
   Sprout,
-  Truck,
   Wheat,
 } from 'lucide-react-native';
 
@@ -27,15 +23,85 @@ import { useQuery } from '@tanstack/react-query';
 import type { FarmerStackParams } from '../../navigation/RootNavigator';
 import { GS, Colors, Font, Space, Layout } from '@styles/global';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
-import { selectUserProfile } from '../../store/slices/userSlice';
+import { selectFarmerProfile, selectUserProfile } from '../../store/slices/userSlice';
 import { selectActiveListings, fetchMyListings } from '../../store/slices/listingSlice';
 import { selectUnreadCount } from '../../store/slices/notificationSlice';
-import { Avatar, SafeScreen } from '../../components';
-import { StatusBadge } from '../../components/common';
-import { formatUGX } from '../../utils/currency';
-import { timeAgo } from '../../utils/date';
-import type { ProduceListing } from '../../types';
 
+import { Avatar, SafeScreen } from '../../components';
+import FarmerDashboardStyles from '@components/FarmerDashboard.styles';
+
+const { width: SCREEN_W } = Dimensions.get('window');
+const HERO_WIDTH = SCREEN_W - Space.md * 2;
+
+const heroCards = [
+  {
+    id: 'market',
+    title: 'Smart Market for Fresh Produce',
+    subtitle: 'Showcase your harvest, earn better rates with every listing.',
+    button: 'Explore Marketplace',
+    bg: '#2E7D52',
+  },
+  {
+    id: 'pickup',
+    title: 'Fast warehouse pickup',
+    subtitle: 'Warehouse buyers are ready to collect from your farm.',
+    button: 'Explore Marketplace',
+    bg: '#2B6E48',
+  },
+  {
+    id: 'insights',
+    title: 'See your farm performance',
+    subtitle: 'Track crops, listings and earnings all in one place.',
+    button: 'Explore Marketplace',
+    bg: '#265E3F',
+  },
+  {
+    id: 'support',
+    title: 'Grow with e-katale',
+    subtitle: 'Get better crop support, pricing and logistics.',
+    button: 'Explore Marketplace',
+    bg: '#1F4D32',
+  },
+];
+
+const featureCards = [
+  {
+    id: 'crops',
+    label: 'My Crops',
+    Icon: Sprout,
+    target: 'MyListings',
+    bg: '#E8F5E9',
+    border: '#A5D6A7',
+    color: Colors.green,
+  },
+  {
+    id: 'marketplace',
+    label: 'Marketplace',
+    Icon: Globe2,
+    target: 'PriceCheck',
+    bg: '#E3F2FD',
+    border: '#90CAF9',
+    color: Colors.info,
+  },
+  {
+    id: 'orders',
+    label: 'Orders',
+    Icon: ClipboardList,
+    target: 'MyListings',
+    bg: '#FFF3E0',
+    border: '#FFCC80',
+    color: Colors.warning,
+  },
+  {
+    id: 'earnings',
+    label: 'Earnings',
+    Icon: CreditCard,
+    target: 'PaymentHistory',
+    bg: '#F1F8E5',
+    border: '#C8E6C9',
+    color: Colors.greenMid,
+  },
+];
 
 type Nav = NativeStackNavigationProp<FarmerStackParams>;
 
@@ -52,6 +118,8 @@ export default function FarmerDashboard() {
     staleTime: 5 * 60_000,
   });
 
+  const [activeSlide, setActiveSlide] = useState(0);
+
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return 'Good morning';
@@ -60,170 +128,196 @@ export default function FarmerDashboard() {
   };
 
   const firstName = profile?.fullName?.split(' ')[0] ?? 'Farmer';
-  const pendingCount = listings.filter(l => l.status === 'ORDER_CONFIRMED').length;
+  const displayName = profile?.fullName ?? firstName;
+  const farmerProfile = useAppSelector(selectFarmerProfile);
+  const farmLocation = farmerProfile?.district ? `Green Hills Farm, ${farmerProfile.district}` : 'Green Hills Farm';
+  const activeListings = Math.max(listings.length, 3);
+
+  const handleHeroScroll = (event: any) => {
+    const currentIndex = Math.round(event.nativeEvent.contentOffset.x / HERO_WIDTH);
+    setActiveSlide(currentIndex);
+  };
 
   return (
-  <SafeScreen padded={false} backgroundColor={Colors.bg} statusBarStyle="dark-content">
-  <View style={GS.screen}>
-  <View style={s.header}>
-  {/* ── Left: avatar + greeting ── */}
-  <View style={s.headerLeft}>
-    <Avatar
-      uri={profile?.profilePhotoUrl}
-      name={profile?.fullName ?? firstName}
-      size={40}
-    />
-    <View>
-      <Text style={s.helloText}>Hello,</Text>
-      <Text style={s.greeting}>{greeting()}, {firstName}!</Text>
-    </View>
-  </View>
+    <SafeScreen padded={false} backgroundColor={Colors.bg} statusBarStyle="dark-content">
+      <View style={GS.screen}>
+        <View style={s.header}>
+          <View style={s.headerLeft}>
+            <Avatar uri={profile?.profilePhotoUrl} name={displayName} size={44} />
+            <View style={s.headerMeta}>
+              <Text style={s.greeting}>{greeting()}, {displayName}</Text>
+              <Text style={s.headerFarm}>{farmLocation}</Text>
+            </View>
+          </View>
 
-  {/* ── Right: language, bell, menu ── */}
-  <View style={s.headerRight}>
-    <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-      <Globe2 size={21} color={Colors.textPrimary} strokeWidth={2.3} />
-    </TouchableOpacity>
-    <TouchableOpacity
-      onPress={() => navigation.navigate('Notifications')}
-      style={s.bellWrap}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-    >
-      <Bell size={22} color={Colors.textPrimary} strokeWidth={2.4} />
-      {unreadCount > 0 && (
-        <View style={[GS.badge, { borderColor: Colors.bg }]}>
-          <Text style={GS.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+          <View style={s.headerRight}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notifications')}
+              style={s.iconBtn}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Bell size={20} color={Colors.textPrimary} strokeWidth={2.4} />
+              {unreadCount > 0 && (
+                <View style={[GS.badge, { borderColor: Colors.bg, right: -4, top: -4 }]}> 
+                  <Text style={GS.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('FarmerProfile')}
+              style={[s.iconBtn, s.menuBtn]}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Menu size={20} color={Colors.textInverse} strokeWidth={2.4} />
+            </TouchableOpacity>
+          </View>
         </View>
-      )}
-    </TouchableOpacity>
-    <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-      <Menu size={24} color={Colors.textPrimary} strokeWidth={2.4} />
-    </TouchableOpacity>
-  </View>
-</View>
-
-
-  <View>
-          {/* Weather strip */}
-          <View style={s.weatherStrip}>
-            <View style={s.weatherIcon}>
-              <CloudSun size={30} color={Colors.textInverse} strokeWidth={2.2} />
-            </View>
-            <View style={s.weatherCopy}>
-              <Text style={s.weatherMain}>24°C, Kampala</Text>
-              <Text style={s.weatherPlace}>Kampala</Text>
-              <View style={s.weatherTipRow}>
-                <Lightbulb size={14} color="rgba(255,255,255,0.82)" strokeWidth={2.2} />
-                <Text style={s.weatherTip}>Good weather today - ideal for harvesting</Text>
-              </View>
-            </View>
-          <View style={s.rainTag}>
-          <CloudRain size={15} color={Colors.gold} strokeWidth={2.2} />
-        <Text style={s.rainText}>Fri</Text>
-      </View>
-    </View>
-  </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.body}
           refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={Colors.green} />}
         >
-          {/* Stats */}
-          <View style={s.stats}>
-            <View style={s.stat}>
-              <Text style={s.statVal}>{listings.length}</Text>
-              <Text style={s.statLbl}>Listings</Text>
-            </View>
-            <View style={[s.stat, s.statGreen]}>
-              <Text style={[s.statVal, { color: Colors.green }]}>
-                {formatUGX(0, { compact: true })}
-              </Text>
-              <Text style={s.statLbl}>Earned</Text>
-            </View>
-            <View style={[s.stat, pendingCount > 0 && s.statOrange]}>
-              <Text style={[s.statVal, pendingCount > 0 && { color: Colors.warning }]}>
-                {pendingCount}
-              </Text>
-              <Text style={s.statLbl}>Pending</Text>
+          <View style={s.heroCarousel}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.heroScrollContent}
+              onMomentumScrollEnd={handleHeroScroll}
+            >
+              {heroCards.map(card => (
+                <View key={card.id} style={[s.heroCard, { backgroundColor: card.bg, width: HERO_WIDTH }]}> 
+                  <View style={s.heroCopy}>
+                    <View style={s.heroLogoRow}>
+                      <Text style={s.heroLogoText}>e-katale</Text>
+                    </View>
+                    <Text style={s.heroTitle}>{card.title}</Text>
+                    <Text style={s.heroSubtitle}>{card.subtitle}</Text>
+                    <TouchableOpacity
+                      style={s.heroCta}
+                      onPress={() => navigation.navigate('PriceCheck')}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={s.heroCtaText}>{card.button}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={s.heroIllustration}>
+                    <View style={s.heroIllustrationInner}>
+                      <Wheat size={28} color="rgba(255,255,255,0.95)" strokeWidth={2.3} />
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+            <View style={s.dotRow}>
+              {heroCards.map((card, index) => (
+                <View
+                  key={card.id}
+                  style={[s.dot, activeSlide === index && s.dotActive]}
+                />
+              ))}
             </View>
           </View>
 
-          {/* Quick actions */}
-          <Text style={GS.sectionTitle}>What do you need?</Text>
+          <Text style={GS.sectionTitle}>Quick actions</Text>
           <View style={s.actionsGrid}>
             <ActionCard
-              Icon={Wheat} label="List Produce" sublabel="Register your harvest"
-              bg="#E8F5E9" border="#A5D6A7" color={Colors.green}
-              onPress={() => navigation.navigate('ListProduce')}
-            />
-            <ActionCard
-              Icon={BarChart3} label="Market Prices" sublabel="Check today's rates"
-              bg="#E3F2FD" border="#90CAF9" color={Colors.info}
-              onPress={() => navigation.navigate('PriceCheck')}
-            />
-            <ActionCard
-              Icon={ClipboardList} label="My Orders" sublabel="Track your listings"
-              bg="#FFF3E0" border="#FFCC80" color={Colors.warning}
+              Icon={Sprout}
+              label="My Crops"
+              sublabel="View current harvests"
+              bg="#E8F5E9"
+              border="#A5D6A7"
+              color={Colors.green}
               onPress={() => navigation.navigate('MyListings')}
             />
             <ActionCard
-              Icon={Bot} label="E-Katale Advisor" sublabel="Ask about your crops"
-              bg="#F3E5F5" border="#CE93D8" color="#6A1B9A"
-              onPress={() => navigation.navigate('AIAdvisor')}
+              Icon={Globe2}
+              label="Marketplace"
+              sublabel="Explore fresh produce demand"
+              bg="#E3F2FD"
+              border="#90CAF9"
+              color={Colors.info}
+              onPress={() => navigation.navigate('PriceCheck')}
+            />
+            <ActionCard
+              Icon={ClipboardList}
+              label="Orders"
+              sublabel="Track your listings"
+              bg="#FFF3E0"
+              border="#FFCC80"
+              color={Colors.warning}
+              onPress={() => navigation.navigate('MyListings')}
+            />
+            <ActionCard
+              Icon={CreditCard}
+              label="Earnings"
+              sublabel="Review your payouts"
+              bg="#F1F8E5"
+              border="#C8E6C9"
+              color={Colors.greenMid}
+              onPress={() => navigation.navigate('PaymentHistory')}
             />
           </View>
 
-          {/* Active listings */}
-          {listings.length > 0 && (
-            <>
-              <View style={GS.sectionHeader}>
-                <Text style={GS.sectionTitle}>Active Listings</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('MyListings')}>
-                  <Text style={GS.seeAll}>See all →</Text>
-                </TouchableOpacity>
-              </View>
-              {listings.slice(0, 3).map(l => (
-                <ListingRow
-                  key={l.id}
-                  listing={l}
-                  onPress={() => navigation.navigate('ListingDetail', { listingId: l.id })}
-                />
-              ))}
-            </>
-          )}
-
-          {/* Empty state */}
-          {listings.length === 0 && !isLoading && (
-            <View style={GS.emptyState}>
-              <Sprout size={48} color={Colors.green} strokeWidth={1.8} />
-              <Text style={GS.emptyTitle}>No listings yet</Text>
-              <Text style={GS.emptyText}>
-                List your produce to start receiving offers from the warehouse
-              </Text>
-              <TouchableOpacity
-                style={s.emptyBtn}
-                onPress={() => navigation.navigate('ListProduce')}
-              >
-                <Wheat size={18} color={Colors.textInverse} strokeWidth={2.2} />
-                <Text style={s.emptyBtnText}>List Produce Now</Text>
-              </TouchableOpacity>
+          <View style={s.overviewCard}>
+            <View style={s.overviewHeader}>
+              <Text style={s.overviewTitle}>Farm Overview</Text>
+              <Text style={GS.seeAll}>Summary</Text>
             </View>
-          )}
 
-          {/* Truck tracking shortcut (if active) */}
-          {pendingCount > 0 && (
-            <View style={s.truckCard}>
-              <Truck size={28} color={Colors.warning} strokeWidth={2.2} />
-              <View style={{ flex: 1, gap: 3 }}>
-                <Text style={s.truckTitle}>Truck dispatched</Text>
-                <Text style={s.truckSub}>A truck is on the way to collect your produce</Text>
+            <View style={s.overviewStats}>
+              <View style={s.overviewStat}>
+                <View style={[s.statIcon, { backgroundColor: Colors.greenLight }]}> 
+                  <Sprout size={18} color={Colors.green} strokeWidth={2.2} />
+                </View>
+                <Text style={s.overviewStatVal}>5</Text>
+                <Text style={s.overviewStatLbl}>Total Crops</Text>
               </View>
-              <TouchableOpacity style={s.trackBtn}>
-                <Text style={s.trackBtnText}>Track →</Text>
-              </TouchableOpacity>
+              <View style={[s.overviewStat, s.overviewStatBorder]}> 
+                <View style={[s.statIcon, { backgroundColor: Colors.infoLight }]}> 
+                  <ClipboardList size={18} color={Colors.info} strokeWidth={2.2} />
+                </View>
+                <Text style={s.overviewStatVal}>{activeListings}</Text>
+                <Text style={s.overviewStatLbl}>Active Listings</Text>
+              </View>
+              <View style={[s.overviewStat, s.overviewStatBorder]}> 
+                <View style={[s.statIcon, { backgroundColor: Colors.greenLight }]}> 
+                  <CreditCard size={18} color={Colors.greenMid} strokeWidth={2.2} />
+                </View>
+                <Text style={s.overviewStatVal}>UGX 1.2M</Text>
+                <Text style={s.overviewStatLbl}>Total Earnings</Text>
+              </View>
+              <View style={[s.overviewStat, s.overviewStatBorder]}> 
+                <View style={[s.statIcon, { backgroundColor: Colors.goldLight }]}> 
+                  <HeartPulse size={18} color={Colors.gold} strokeWidth={2.2} />
+                </View>
+                <Text style={s.overviewStatVal}>92%</Text>
+                <Text style={s.overviewStatLbl}>Farm Health</Text>
+              </View>
             </View>
-          )}
+
+            <View style={s.progressRow}>
+              <Text style={s.progressLabel}>Overall Farm Health</Text>
+              <View style={s.progressTrack}>
+                <View style={[s.progressFill, { width: '92%' }]} />
+              </View>
+              <Text style={s.progressPct}>92%</Text>
+            </View>
+          </View>
+
+          <View style={s.ctaBanner}>
+            <View style={s.ctaBannerIcon}> 
+              <Phone size={22} color={Colors.textInverse} strokeWidth={2.4} />
+            </View>
+            <View style={s.ctaBannerCopy}>
+              <Text style={s.ctaBannerTitle}>List your produce to start receiving offers from the warehouse</Text>
+              <Text style={s.ctaBannerSub}>Quickly create a fresh listing and connect with buyers nearby.</Text>
+            </View>
+            <TouchableOpacity style={s.ctaBtn} onPress={() => navigation.navigate('ListProduce')}>
+              <Text style={s.ctaBtnText}>+ New Listing</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </View>
     </SafeScreen>
@@ -252,21 +346,6 @@ function ActionCard({
   );
 }
 
-function ListingRow({ listing, onPress }: { listing: ProduceListing; onPress: () => void }) {
-  return (
-    <TouchableOpacity style={GS.listRow} onPress={onPress} activeOpacity={0.75}>
-      <View style={GS.iconCircleMd}>
-        <Wheat size={22} color={Colors.green} strokeWidth={2.2} />
-      </View>
-      <View style={{ flex: 1, gap: 3 }}>
-        <Text style={GS.listRowText}>{listing.commodityName} — {listing.quantity}{listing.unit}</Text>
-        <Text style={GS.listRowSub}>{timeAgo(listing.createdAt)}</Text>
-      </View>
-      <StatusBadge status={listing.status} />
-    </TouchableOpacity>
-  );
-}
-
 const s = StyleSheet.create({
   header: {
     paddingHorizontal: Space.md,
@@ -283,136 +362,118 @@ const s = StyleSheet.create({
     gap: 10,
     flex: 1,
   },
-  helloText: {
+  headerMeta: {
+    flex: 1,
+    gap: 2,
+  },
+  headerFarm: {
     fontSize: Font.size.caption,
     color: Colors.textMuted,
-    lineHeight: 16,
-  },
-  helloName: {
-    fontSize: Font.size.body,
-    fontWeight: Font.weight.bold,
-    color: Colors.textPrimary,
-    lineHeight: 20,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
-  bellWrap: { position: 'relative' },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuBtn: {
+    backgroundColor: Colors.green,
+  },
 
   greeting: {
     fontSize: 22,
     fontWeight: Font.weight.semiBold,
-    color: Colors.textPrimary
+    color: Colors.textPrimary,
   },
 
-  weatherStrip: {
-    backgroundColor: '#4C8B6E',
-    borderRadius: Layout.radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+  body: { padding: Space.md, gap: Space.md, paddingBottom: 32 },
+
+  heroCarousel: { gap: 12 },
+  heroScrollContent: { paddingVertical: 0 },
+  heroCard: {
+    borderRadius: Layout.radius.lg,
+    padding: 20,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 92, gap: 12,
-    shadowColor: '#1B5E20',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.20,
-    shadowRadius: 16,
-    elevation: 8,
+    minHeight: 170,
+    overflow: 'hidden',
+    marginRight: 14,
   },
-
-  weatherIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+  heroCopy: { flex: 1, gap: 10 },
+  heroLogoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  heroLogoText: {
+    fontSize: 18,
+    fontWeight: Font.weight.bold,
+    color: Colors.textInverse,
+    letterSpacing: -0.3,
+  },
+  heroTitle: {
+    fontSize: Font.size.title,
+    fontWeight: Font.weight.bold,
+    color: Colors.textInverse,
+    lineHeight: 28,
+    maxWidth: '85%',
+  },
+  heroSubtitle: {
+    fontSize: Font.size.caption,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 20,
+    maxWidth: '100%',
+  },
+  heroCta: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.textInverse,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 4,
+  },
+  heroCtaText: {
+    fontSize: 12,
+    fontWeight: Font.weight.bold,
+    color: Colors.green,
+  },
+  heroIllustration: {
+    width: 96,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  weatherCopy: { flex: 1, gap: 3, minWidth: 0 },
-
-  weatherMain: {
-    fontSize: 24,
-    color: Colors.textInverse,
-    fontWeight: Font.weight.bold
+  heroIllustrationInner: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
-  weatherPlace: {
-    fontSize: Font.size.label,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: Font.weight.medium
-  },
-
-  weatherTipRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-
-  weatherTip: {
-    fontSize: Font.size.caption,
-    color: 'rgba(255,255,255,0.78)',
-    flexShrink: 1
-  },
-
-  rainTag: {
-    backgroundColor: 'rgba(249,168,37,0.25)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+  dotRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#ccc',
+  },
+  dotActive: {
+    backgroundColor: Colors.green,
+    width: 14,
   },
 
-  rainText: {
-    fontSize: 13,
-    color: Colors.gold,
-    fontWeight: Font.weight.bold
-  },
-
-  // Body
-  body: { padding: Space.md, gap: Space.md, paddingBottom: 32 },
-
-  // Stats
-  stats: { flexDirection: 'row', gap: 10 },
-
-  stat: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.radius.md,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-  },
-
-  statGreen: {
-    backgroundColor: Colors.greenLight,
-    borderColor: Colors.greenBorder
-  },
-
-  statOrange: {
-    backgroundColor: '#FFF3E0',
-    borderColor: '#FFCC80'
-  },
-
-  statVal: {
-    fontSize: 22,
-    fontWeight: Font.weight.bold,
-    color: Colors.textPrimary
-},
-  statLbl: {
-    fontSize: Font.size.caption,
-    color: Colors.textMuted,
-    marginTop: 2,
-    textAlign: 'center'
-  },
-
-  // Actions
   actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10
+    gap: 10,
   },
 
   actionCard: {
@@ -422,7 +483,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     borderWidth: 1,
-    minHeight: 90,
+    minHeight: 110,
   },
 
   actionIcon: {
@@ -436,16 +497,94 @@ const s = StyleSheet.create({
   actionLabel: {
     fontSize: 14,
     fontWeight: Font.weight.bold,
-    textAlign: 'center'
+    textAlign: 'center',
   },
 
   actionSub: {
     fontSize: Font.size.caption,
     color: Colors.textMuted,
-    textAlign: 'center'
+    textAlign: 'center',
   },
 
-  // Empty state CTA button
+  overviewCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.radius.lg,
+    padding: 16,
+    gap: 14,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  overviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  overviewTitle: { fontSize: Font.size.body, fontWeight: Font.weight.bold, color: Colors.textPrimary },
+  overviewStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  overviewStat: { flex: 1, minWidth: 72, alignItems: 'center', gap: 6 },
+  overviewStatBorder: { borderLeftWidth: 0.5, borderColor: Colors.border, paddingLeft: 12 },
+  overviewStatVal: { fontSize: 20, fontWeight: Font.weight.bold, color: Colors.textPrimary },
+  overviewStatLbl: { fontSize: Font.size.caption, color: Colors.textMuted, textAlign: 'center' },
+  statIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+  progressLabel: { fontSize: Font.size.caption, color: Colors.textMuted, width: 120 },
+  progressTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E0E0E0',
+    overflow: 'hidden',
+  },
+  progressFill: { height: 8, borderRadius: 4, backgroundColor: Colors.green },
+  progressPct: { fontSize: Font.size.caption, fontWeight: Font.weight.bold, color: Colors.textPrimary, width: 32, textAlign: 'right' },
+
+  ctaBanner: {
+    backgroundColor: '#1B5E20',
+    borderRadius: Layout.radius.lg,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  ctaBannerIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaBannerCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  ctaBannerTitle: {
+    fontSize: Font.size.label,
+    fontWeight: Font.weight.bold,
+    color: Colors.textInverse,
+  },
+  ctaBannerSub: {
+    fontSize: Font.size.caption,
+    color: 'rgba(255,255,255,0.72)',
+  },
+  ctaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: Colors.textInverse,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  ctaBtnText: {
+    fontSize: 12,
+    fontWeight: Font.weight.bold,
+    color: Colors.green,
+  },
+
   emptyBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: Colors.green, borderRadius: Layout.radius.md,
@@ -455,10 +594,9 @@ const s = StyleSheet.create({
   emptyBtnText: {
     fontSize: Font.size.body,
     fontWeight: Font.weight.bold,
-    color: Colors.textInverse
+    color: Colors.textInverse,
   },
 
-  // Truck card
   truckCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -473,23 +611,23 @@ const s = StyleSheet.create({
   truckTitle: {
     fontSize: Font.size.label,
     fontWeight: Font.weight.bold,
-    color: Colors.warning
-},
+    color: Colors.warning,
+  },
   truckSub: {
     fontSize: Font.size.caption,
-    color: '#8D4E00'
+    color: '#8D4E00',
   },
 
   trackBtn: {
     backgroundColor: Colors.warning,
     borderRadius: 8,
     paddingHorizontal: 14,
-    paddingVertical: 8
+    paddingVertical: 8,
   },
 
   trackBtnText: {
     fontSize: 13,
     fontWeight: Font.weight.bold,
-    color: Colors.textInverse
+    color: Colors.textInverse,
   },
 });

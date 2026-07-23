@@ -1,4 +1,8 @@
 // backend/all-services/notification-service/src/server.ts
+// Provide a minimal console declaration to satisfy TypeScript when lib settings
+// don't include the standard library definitions that declare `console`.
+declare const console: { log: (...args: any[]) => void }
+
 import app from './app'
 
 const PORT = process.env.PORT ?? 3003

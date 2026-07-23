@@ -6,7 +6,7 @@ const ugandaPhone = z
   .regex(/^\+256[0-9]{9}$/, 'Enter a valid Uganda phone number (+256XXXXXXXXX)')
 
 export const RequestOtpSchema = z.object({
-  phone:   ugandaPhone,
+  phone: z.string().trim().min(1),
   purpose: z.enum(['register', 'login']),
   role:    z.enum([
     'farmer', 'village_agent', 'warehouse',

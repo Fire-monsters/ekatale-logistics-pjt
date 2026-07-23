@@ -6,9 +6,9 @@ const ACCESS_SECRET  = process.env.JWT_ACCESS_SECRET  as string
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET as string
 
 export interface TokenPayload {
-  userId: string
-  role:   string
-  phone:  string
+  userId: string,
+  role:   string,
+  phone:  string,
 }
 
 export const generateAccessToken = (payload: TokenPayload): string => {

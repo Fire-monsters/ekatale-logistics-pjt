@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+
 import type { RootState } from '../index';
 import { API_ROUTES } from '@constants/index';
 import { get } from '@services/api/client';

@@ -2,7 +2,49 @@
 import { Platform } from 'react-native';
 
 const LOCAL_IP = '192.168.0.27';
-const DEV_API_HOST = Platform.OS === 'android' ? LOCAL_IP : LOCAL_IP;
+const DEFAULT_DEV_API_HOST = LOCAL_IP;
+
+type ResolveApiHostOptions = {
+  envHost?: string;
+  debuggerHost?: string;
+  extraHost?: string;
+};
+
+export function resolveApiHost(options: ResolveApiHostOptions = {}): string {
+  const { envHost, debuggerHost, extraHost } = options;
+
+  const normalizedEnvHost = envHost?.trim();
+  const normalizedDebuggerHost = debuggerHost?.trim();
+  const normalizedExtraHost = extraHost?.trim();
+
+  const preferredHost = normalizedEnvHost || normalizedDebuggerHost || normalizedExtraHost || DEFAULT_DEV_API_HOST;
+
+  if (!preferredHost) {
+    return DEFAULT_DEV_API_HOST;
+  }
+
+  if (preferredHost.includes('://')) {
+    return preferredHost.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+  }
+
+  return preferredHost.includes(':')
+    ? preferredHost.split(':')[0]
+    : preferredHost;
+}
+
+export function getDevApiHost(): string {
+  const envHost = process.env.EXPO_PUBLIC_API_HOST || process.env.API_HOST;
+  const debuggerHost = (globalThis as typeof globalThis & { expoConfig?: { hostUri?: string } }).expoConfig?.hostUri;
+  const extraHost = process.env.EXPO_PUBLIC_API_HOST_ALT || process.env.API_HOST_ALT;
+
+  return resolveApiHost({
+    envHost,
+    debuggerHost,
+    extraHost,
+  });
+}
+
+const DEV_API_HOST = Platform.OS === 'android' ? getDevApiHost() : getDevApiHost();
 
 // ── Per-service base URLs ───────────────────────────────────────────────────
 // Each backend service runs on its own port in dev. In production these would
@@ -11,15 +53,15 @@ const DEV_API_HOST = Platform.OS === 'android' ? LOCAL_IP : LOCAL_IP;
 
 export const AUTH_API_BASE_URL = __DEV__
   ? `http://${DEV_API_HOST}:3001/api`
-  : 'https://api.ekatale.com/v1/auth';
+  : 'https://api.ekatale.online/v1/auth';
 
 export const LISTING_API_BASE_URL = __DEV__
   ? `http://${DEV_API_HOST}:3002/api`
-  : 'https://api.ekatale.com/v1/listings';
+  : 'https://api.ekatale.online/v1/listings';
 
 export const NOTIFICATION_API_BASE_URL = __DEV__
   ? `http://${DEV_API_HOST}:3003/api`
-  : 'https://api.ekatale.com/v1/notifications';
+  : 'https://api.ekatale.online/v1/notifications';
 
 /** @deprecated use AUTH_API_BASE_URL — kept so existing imports don't break */
 export const API_BASE_URL = AUTH_API_BASE_URL;

@@ -56,6 +56,7 @@ export default function GetStartedScreen() {
    * react-i18next re-renders every component using useTranslation() automatically,
    * so the strings on this screen update immediately without any extra setState.
    */
+
   const handleLangChange = async (code: string) => {
     await switchLanguage(code);                                          // ← AsyncStorage + i18next
     dispatch(setLanguagePreference(code as any));                       // ← Redux

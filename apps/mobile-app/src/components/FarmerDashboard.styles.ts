@@ -1,72 +1,69 @@
 import { StyleSheet } from 'react-native';
-import { Colors, Font, Space, Layout } from '@styles/global';
+import { GS, Colors, Font, Space, Layout } from '@styles/global';
 
 export default StyleSheet.create({
-  body: { padding: Space.md, gap: Space.md, paddingBottom: 32 },
 
   // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: Space.md,
-    paddingVertical: Space.sm,
-    gap: 12,
-    backgroundColor: Colors.bg,
-  },
-
-  headerMeta: { flex: 1, gap: 1 },
-  headerGreeting: {
-    fontSize: Font.size.caption,
-    color: Colors.textMuted,
-  },
-
-  headerName: {
-    fontSize: 16,
-    fontWeight: Font.weight.bold,
-    color: Colors.textPrimary,
-  },
-
-  headerFarmRow: {
+    paddingVertical: Space.md,
+    paddingTop: Space.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    marginTop: 1,
+    justifyContent: 'space-between',
+    gap: 12,
   },
-
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  headerMeta: {
+    flex: 1,
+    gap: 2,
+  },
   headerFarm: {
     fontSize: Font.size.caption,
     color: Colors.textMuted,
   },
-
-  headerActions: {
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
-
   iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#F0F0F0',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  menuBtn: {
+    backgroundColor: Colors.green,
+  },
 
-  menuBtn: { backgroundColor: Colors.green },
+  greeting: {
+    fontSize: 22,
+    fontWeight: Font.weight.semiBold,
+    color: Colors.textPrimary,
+  },
 
-  // Hero
-  heroWrap: { gap: 10 },
+  body: { padding: Space.md, gap: Space.md, paddingBottom: 32 },
+
+  heroCarousel: { gap: 12 },
+  heroScrollContent: { paddingVertical: 0 },
   heroCard: {
-    backgroundColor: '#2E7D52',
     borderRadius: Layout.radius.lg,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 140,
+    minHeight: 170,
     overflow: 'hidden',
+    marginRight: 14,
   },
-  heroCopy: { flex: 1, gap: 8 },
+  heroCopy: { flex: 1, gap: 10 },
   heroLogoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   heroLogoText: {
     fontSize: 18,
@@ -74,10 +71,18 @@ export default StyleSheet.create({
     color: Colors.textInverse,
     letterSpacing: -0.3,
   },
+  heroTitle: {
+    fontSize: Font.size.title,
+    fontWeight: Font.weight.bold,
+    color: Colors.textInverse,
+    lineHeight: 28,
+    maxWidth: '85%',
+  },
   heroSubtitle: {
-    fontSize: 13,
+    fontSize: Font.size.caption,
     color: 'rgba(255,255,255,0.85)',
-    lineHeight: 19,
+    lineHeight: 20,
+    maxWidth: '100%',
   },
   heroCta: {
     alignSelf: 'flex-start',
@@ -87,45 +92,77 @@ export default StyleSheet.create({
     paddingVertical: 8,
     marginTop: 4,
   },
-  heroCtaText: { fontSize: 12, fontWeight: Font.weight.bold, color: Colors.green },
+  heroCtaText: {
+    fontSize: 12,
+    fontWeight: Font.weight.bold,
+    color: Colors.green,
+  },
   heroIllustration: {
-    width: 100,
+    width: 96,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroIllustrationInner: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 78,
+    height: 78,
+    borderRadius: 39,
     backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dotRow: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#ccc' },
-  dotActive: { backgroundColor: Colors.green, width: 14 },
-
-  // Quick nav
-  quickNav: {
+  dotRow: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.radius.md,
-    paddingVertical: 16,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 8,
   },
-  quickNavItem: { flex: 1, alignItems: 'center', gap: 6 },
-  quickNavIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#E8F5E9',
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#ccc',
+  },
+  dotActive: {
+    backgroundColor: Colors.green,
+    width: 14,
+  },
+
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+
+  actionCard: {
+    width: '47%',
+    borderRadius: Layout.radius.lg,
+    padding: 16,
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1,
+    minHeight: 110,
+  },
+
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickNavLabel: { fontSize: Font.size.caption, color: Colors.textPrimary, fontWeight: Font.weight.medium },
 
-  // Farm overview
+  actionLabel: {
+    fontSize: 14,
+    fontWeight: Font.weight.bold,
+    textAlign: 'center',
+  },
+
+  actionSub: {
+    fontSize: Font.size.caption,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+
   overviewCard: {
     backgroundColor: Colors.surface,
     borderRadius: Layout.radius.lg,
@@ -134,25 +171,23 @@ export default StyleSheet.create({
     borderWidth: 0.5,
     borderColor: Colors.border,
   },
-  overviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  overviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   overviewTitle: { fontSize: Font.size.body, fontWeight: Font.weight.bold, color: Colors.textPrimary },
-  overviewStats: { flexDirection: 'row' },
-  overviewStat: { flex: 1, alignItems: 'center', gap: 2 },
-  overviewStatBorder: { borderLeftWidth: 0.5, borderColor: Colors.border },
+  overviewStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  overviewStat: { flex: 1, minWidth: 72, alignItems: 'center', gap: 6 },
+  overviewStatBorder: { borderLeftWidth: 0.5, borderColor: Colors.border, paddingLeft: 12 },
   overviewStatVal: { fontSize: 20, fontWeight: Font.weight.bold, color: Colors.textPrimary },
-  overviewStatLbl: { fontSize: 9, color: Colors.textMuted, textAlign: 'center' },
-  tagPill: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginTop: 2,
+  overviewStatLbl: { fontSize: Font.size.caption, color: Colors.textMuted, textAlign: 'center' },
+  statIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  tagPillText: { fontSize: 8, color: Colors.green, fontWeight: Font.weight.bold },
 
-  // Progress
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  progressLabel: { fontSize: Font.size.caption, color: Colors.textMuted, width: 110 },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+  progressLabel: { fontSize: Font.size.caption, color: Colors.textMuted, width: 120 },
   progressTrack: {
     flex: 1,
     height: 8,
@@ -163,56 +198,6 @@ export default StyleSheet.create({
   progressFill: { height: 8, borderRadius: 4, backgroundColor: Colors.green },
   progressPct: { fontSize: Font.size.caption, fontWeight: Font.weight.bold, color: Colors.textPrimary, width: 32, textAlign: 'right' },
 
-  // Section header
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  // Crop cards
-  cropsScroll: { gap: 12, paddingRight: Space.md },
-  cropCard: {
-    width: 148,
-    borderRadius: Layout.radius.md,
-    backgroundColor: Colors.surface,
-    overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-  },
-  cropPhoto: {
-    height: 90,
-    backgroundColor: '#6BAE85',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cropBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  cropBadgeText: { fontSize: 9, color: Colors.textInverse, fontWeight: Font.weight.bold },
-  cropInfo: { padding: 10, gap: 3 },
-  cropName: { fontSize: Font.size.label, fontWeight: Font.weight.bold, color: Colors.textPrimary },
-  cropMeta: { fontSize: Font.size.caption, color: Colors.textMuted },
-  onTrackPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#E8F5E9',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginTop: 4,
-    alignSelf: 'flex-start',
-  },
-  onTrackPillReady: { backgroundColor: '#C8E6C9' },
-  onTrackText: { fontSize: 10, color: Colors.green, fontWeight: Font.weight.semiBold },
-
-  // CTA Banner
   ctaBanner: {
     backgroundColor: '#1B5E20',
     borderRadius: Layout.radius.lg,
@@ -229,12 +214,19 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  ctaBannerCopy: {
+    flex: 1,
+    gap: 4,
+  },
   ctaBannerTitle: {
     fontSize: Font.size.label,
     fontWeight: Font.weight.bold,
     color: Colors.textInverse,
   },
-  ctaBannerSub: { fontSize: Font.size.caption, color: 'rgba(255,255,255,0.72)' },
+  ctaBannerSub: {
+    fontSize: Font.size.caption,
+    color: 'rgba(255,255,255,0.72)',
+  },
   ctaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -244,5 +236,55 @@ export default StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  ctaBtnText: { fontSize: 12, fontWeight: Font.weight.bold, color: Colors.green },
+  ctaBtnText: {
+    fontSize: 12,
+    fontWeight: Font.weight.bold,
+    color: Colors.green,
+  },
+
+  emptyBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.green, borderRadius: Layout.radius.md,
+    paddingVertical: 14, paddingHorizontal: 28, marginTop: 8,
+  },
+
+  emptyBtnText: {
+    fontSize: Font.size.body,
+    fontWeight: Font.weight.bold,
+    color: Colors.textInverse,
+  },
+
+  truckCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFF3E0',
+    borderRadius: Layout.radius.lg,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#FFCC80',
+  },
+
+  truckTitle: {
+    fontSize: Font.size.label,
+    fontWeight: Font.weight.bold,
+    color: Colors.warning,
+  },
+  truckSub: {
+    fontSize: Font.size.caption,
+    color: '#8D4E00',
+  },
+
+  trackBtn: {
+    backgroundColor: Colors.warning,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+
+  trackBtnText: {
+    fontSize: 13,
+    fontWeight: Font.weight.bold,
+    color: Colors.textInverse,
+},
 });

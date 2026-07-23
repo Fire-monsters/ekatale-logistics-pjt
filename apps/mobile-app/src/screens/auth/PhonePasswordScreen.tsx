@@ -1,4 +1,3 @@
-// apps/app1-farmer/src/screens/auth/PhonePasswordScreen.tsx
 /* eslint-disable react-native/no-inline-styles */
 import React, { useState, useRef } from 'react';
 import {

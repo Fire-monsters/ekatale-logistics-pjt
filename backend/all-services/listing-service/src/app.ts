@@ -4,6 +4,7 @@ import path from 'path'
 import listingRoutes from './listings/listing.routes'
 import priceRoutes from './prices/price.routes'
 import inventoryRoutes from './inventory/inventory.routes'
+import consumerRoutes from './consumer/consumer.routes'
 
 const app = express()
 
@@ -22,6 +23,7 @@ app.get('/health', (_, res) => {
 app.use('/api', listingRoutes)
 app.use('/api', priceRoutes)
 app.use('/api', inventoryRoutes)
+app.use('/api', consumerRoutes)
 
 // 404 handler
 app.use((_, res) => {

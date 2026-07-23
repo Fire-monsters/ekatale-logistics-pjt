@@ -29,7 +29,7 @@ const handleError = (error: unknown, res: Response) => {
 }
 
 export class InventoryController {
-  
+
   // ── SKU CONTROLLER METHODS ────────────────────────────────────────────────
 
   // POST /inventory/skus
