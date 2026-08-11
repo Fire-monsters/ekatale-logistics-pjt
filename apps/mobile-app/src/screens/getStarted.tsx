@@ -22,7 +22,7 @@ const LANGS = [
   { code: 'rn', label: 'RN' },
 ];
 
-const LOGO = require('../../assets/ekatale-logo.jpg');
+const LOGO = require('../../assets/ekatale-logo-bg.png');
 
 export default function GetStartedScreen() {
   const navigation = useNavigation<Nav>();
